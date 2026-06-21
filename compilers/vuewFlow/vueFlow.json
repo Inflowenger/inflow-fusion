@@ -1,0 +1,758 @@
+{
+    "nodes": [
+                {
+            "id": "start_node",
+            "type": "custom",
+            "dimensions": {
+                "width": 140,
+                "height": 24
+            },
+            "computedPosition": {
+                "x": 250,
+                "y": 50,
+                "z": 0
+            },
+
+            "selected": false,
+            "dragging": false,
+            "resizing": false,
+            "initialized": false,
+            "isParent": false,
+            "position": {
+                "x": 250,
+                "y": 50
+            },
+            "data": {
+                "label": "StartNode"
+            },
+            "events": {}
+        },
+        {
+            "id": "1",
+            "type": "custom",
+            "dimensions": {
+                "width": 140,
+                "height": 24
+            },
+            "computedPosition": {
+                "x": 250,
+                "y": 50,
+                "z": 0
+            },
+            "handleBounds": {
+                "source": [
+                    {
+                        "id": "output",
+                        "type": "source",
+                        "nodeId": "1",
+                        "position": "right",
+                        "x": 136,
+                        "y": 4,
+                        "width": 8,
+                        "height": 16
+                    }
+                ],
+                "target": [
+                    {
+                        "id": "input",
+                        "type": "target",
+                        "nodeId": "1",
+                        "position": "left",
+                        "x": -4,
+                        "y": 4,
+                        "width": 8,
+                        "height": 16
+                    }
+                ]
+            },
+            "selected": false,
+            "dragging": false,
+            "resizing": false,
+            "initialized": false,
+            "isParent": false,
+            "position": {
+                "x": 250,
+                "y": 50
+            },
+            "data": {
+                "label": "API Gateway"
+            },
+            "events": {}
+        },
+        {
+            "id": "2",
+            "type": "custom",
+            "dimensions": {
+                "width": 140,
+                "height": 24
+            },
+            "computedPosition": {
+                "x": 100,
+                "y": 200,
+                "z": 0
+            },
+            "handleBounds": {
+                "source": [
+                    {
+                        "id": "output",
+                        "type": "source",
+                        "nodeId": "2",
+                        "position": "right",
+                        "x": 136,
+                        "y": 4,
+                        "width": 8,
+                        "height": 16
+                    }
+                ],
+                "target": [
+                    {
+                        "id": "input",
+                        "type": "target",
+                        "nodeId": "2",
+                        "position": "left",
+                        "x": -4,
+                        "y": 4,
+                        "width": 8,
+                        "height": 16
+                    }
+                ]
+            },
+            "selected": false,
+            "dragging": false,
+            "resizing": false,
+            "initialized": false,
+            "isParent": false,
+            "position": {
+                "x": 100,
+                "y": 200
+            },
+            "data": {
+                "label": "Auth Service"
+            },
+            "events": {}
+        },
+        {
+            "id": "3",
+            "type": "custom",
+            "dimensions": {
+                "width": 140,
+                "height": 24
+            },
+            "computedPosition": {
+                "x": 400,
+                "y": 200,
+                "z": 0
+            },
+            "handleBounds": {
+                "source": [
+                    {
+                        "id": "output",
+                        "type": "source",
+                        "nodeId": "3",
+                        "position": "right",
+                        "x": 136,
+                        "y": 4,
+                        "width": 8,
+                        "height": 16
+                    }
+                ],
+                "target": [
+                    {
+                        "id": "input",
+                        "type": "target",
+                        "nodeId": "3",
+                        "position": "left",
+                        "x": -4,
+                        "y": 4,
+                        "width": 8,
+                        "height": 16
+                    }
+                ]
+            },
+            "selected": false,
+            "dragging": false,
+            "resizing": false,
+            "initialized": false,
+            "isParent": false,
+            "position": {
+                "x": 400,
+                "y": 200
+            },
+            "data": {
+                "label": "Data Service"
+            },
+            "events": {}
+        },
+        {
+            "id": "4",
+            "type": "custom",
+            "dimensions": {
+                "width": 140,
+                "height": 24
+            },
+            "computedPosition": {
+                "x": 495,
+                "y": 133.5,
+                "z": 0
+            },
+            "handleBounds": {
+                "source": [
+                    {
+                        "id": "output",
+                        "type": "source",
+                        "nodeId": "4",
+                        "position": "right",
+                        "x": 136,
+                        "y": 4,
+                        "width": 8,
+                        "height": 16
+                    }
+                ],
+                "target": [
+                    {
+                        "id": "input",
+                        "type": "target",
+                        "nodeId": "4",
+                        "position": "left",
+                        "x": -4,
+                        "y": 4,
+                        "width": 8,
+                        "height": 16
+                    }
+                ]
+            },
+            "selected": false,
+            "dragging": false,
+            "resizing": false,
+            "initialized": false,
+            "isParent": false,
+            "position": {
+                "x": 495,
+                "y": 133.5
+            },
+            "data": {
+                "label": "Database"
+            },
+            "events": {}
+        }
+    ],
+    "edges": [
+                {
+            "id": "e-start_node-1-1781193850590",
+            "type": "custom-edge",
+            "source": "start_node",
+            "target": "1",
+            "sourceHandle": "output",
+            "targetHandle": "input",
+            "data": {
+                "tags": [],
+                "edgeType": "default"
+            },
+            "events": {},
+            "label": "",
+            "markerEnd": "arrowclosed",
+            "animated": true,
+            "sourceX": 394,
+            "sourceY": 62,
+            "targetX": 96,
+            "targetY": 212
+        },
+        {
+            "id": "e-1-2-1781193850590",
+            "type": "custom-edge",
+            "source": "1",
+            "target": "2",
+            "sourceHandle": "output",
+            "targetHandle": "input",
+            "data": {
+                "tags": ["gte","lte"],
+                "edgeType": "default"
+            },
+            "events": {},
+            "label": "",
+            "markerEnd": "arrowclosed",
+            "animated": true,
+            "sourceNode": {
+                "id": "1",
+                "type": "custom",
+                "dimensions": {
+                    "width": 140,
+                    "height": 24
+                },
+                "computedPosition": {
+                    "x": 250,
+                    "y": 50,
+                    "z": 0
+                },
+                "handleBounds": {
+                    "source": [
+                        {
+                            "id": "output",
+                            "type": "source",
+                            "nodeId": "1",
+                            "position": "right",
+                            "x": 136,
+                            "y": 4,
+                            "width": 8,
+                            "height": 16
+                        }
+                    ],
+                    "target": [
+                        {
+                            "id": "input",
+                            "type": "target",
+                            "nodeId": "1",
+                            "position": "left",
+                            "x": -4,
+                            "y": 4,
+                            "width": 8,
+                            "height": 16
+                        }
+                    ]
+                },
+                "selected": false,
+                "dragging": false,
+                "resizing": false,
+                "initialized": false,
+                "isParent": false,
+                "position": {
+                    "x": 250,
+                    "y": 50
+                },
+                "data": {
+                    "label": "API Gateway"
+                },
+                "events": {}
+            },
+            "targetNode": {
+                "id": "2",
+                "type": "custom",
+                "dimensions": {
+                    "width": 140,
+                    "height": 24
+                },
+                "computedPosition": {
+                    "x": 100,
+                    "y": 200,
+                    "z": 0
+                },
+                "handleBounds": {
+                    "source": [
+                        {
+                            "id": "output",
+                            "type": "source",
+                            "nodeId": "2",
+                            "position": "right",
+                            "x": 136,
+                            "y": 4,
+                            "width": 8,
+                            "height": 16
+                        }
+                    ],
+                    "target": [
+                        {
+                            "id": "input",
+                            "type": "target",
+                            "nodeId": "2",
+                            "position": "left",
+                            "x": -4,
+                            "y": 4,
+                            "width": 8,
+                            "height": 16
+                        }
+                    ]
+                },
+                "selected": false,
+                "dragging": false,
+                "resizing": false,
+                "initialized": false,
+                "isParent": false,
+                "position": {
+                    "x": 100,
+                    "y": 200
+                },
+                "data": {
+                    "label": "Auth Service"
+                },
+                "events": {}
+            },
+            "sourceX": 394,
+            "sourceY": 62,
+            "targetX": 96,
+            "targetY": 212
+        },
+        {
+            "id": "e-2-3-1781193854995",
+            "type": "custom-edge",
+            "source": "2",
+            "target": "3",
+            "sourceHandle": "output",
+            "targetHandle": "input",
+            "data": {
+                "tags": [],
+                "edgeType": "default"
+            },
+            "events": {},
+            "label": "",
+            "markerEnd": "arrowclosed",
+            "animated": true,
+            "sourceNode": {
+                "id": "2",
+                "type": "custom",
+                "dimensions": {
+                    "width": 140,
+                    "height": 24
+                },
+                "computedPosition": {
+                    "x": 100,
+                    "y": 200,
+                    "z": 0
+                },
+                "handleBounds": {
+                    "source": [
+                        {
+                            "id": "output",
+                            "type": "source",
+                            "nodeId": "2",
+                            "position": "right",
+                            "x": 136,
+                            "y": 4,
+                            "width": 8,
+                            "height": 16
+                        }
+                    ],
+                    "target": [
+                        {
+                            "id": "input",
+                            "type": "target",
+                            "nodeId": "2",
+                            "position": "left",
+                            "x": -4,
+                            "y": 4,
+                            "width": 8,
+                            "height": 16
+                        }
+                    ]
+                },
+                "selected": false,
+                "dragging": false,
+                "resizing": false,
+                "initialized": false,
+                "isParent": false,
+                "position": {
+                    "x": 100,
+                    "y": 200
+                },
+                "data": {
+                    "label": "Auth Service"
+                },
+                "events": {}
+            },
+            "targetNode": {
+                "id": "3",
+                "type": "custom",
+                "dimensions": {
+                    "width": 140,
+                    "height": 24
+                },
+                "computedPosition": {
+                    "x": 400,
+                    "y": 200,
+                    "z": 0
+                },
+                "handleBounds": {
+                    "source": [
+                        {
+                            "id": "output",
+                            "type": "source",
+                            "nodeId": "3",
+                            "position": "right",
+                            "x": 136,
+                            "y": 4,
+                            "width": 8,
+                            "height": 16
+                        }
+                    ],
+                    "target": [
+                        {
+                            "id": "input",
+                            "type": "target",
+                            "nodeId": "3",
+                            "position": "left",
+                            "x": -4,
+                            "y": 4,
+                            "width": 8,
+                            "height": 16
+                        }
+                    ]
+                },
+                "selected": false,
+                "dragging": false,
+                "resizing": false,
+                "initialized": false,
+                "isParent": false,
+                "position": {
+                    "x": 400,
+                    "y": 200
+                },
+                "data": {
+                    "label": "Data Service"
+                },
+                "events": {}
+            },
+            "sourceX": 244,
+            "sourceY": 212,
+            "targetX": 396,
+            "targetY": 212
+        },
+        {
+            "id": "e-1-4-1781193861962",
+            "type": "custom-edge",
+            "source": "1",
+            "target": "4",
+            "sourceHandle": "output",
+            "targetHandle": "input",
+            "data": {
+                "tags": [],
+                "edgeType": "default"
+            },
+            "events": {},
+            "label": "",
+            "markerEnd": "arrowclosed",
+            "animated": true,
+            "sourceNode": {
+                "id": "1",
+                "type": "custom",
+                "dimensions": {
+                    "width": 140,
+                    "height": 24
+                },
+                "computedPosition": {
+                    "x": 250,
+                    "y": 50,
+                    "z": 0
+                },
+                "handleBounds": {
+                    "source": [
+                        {
+                            "id": "output",
+                            "type": "source",
+                            "nodeId": "1",
+                            "position": "right",
+                            "x": 136,
+                            "y": 4,
+                            "width": 8,
+                            "height": 16
+                        }
+                    ],
+                    "target": [
+                        {
+                            "id": "input",
+                            "type": "target",
+                            "nodeId": "1",
+                            "position": "left",
+                            "x": -4,
+                            "y": 4,
+                            "width": 8,
+                            "height": 16
+                        }
+                    ]
+                },
+                "selected": false,
+                "dragging": false,
+                "resizing": false,
+                "initialized": false,
+                "isParent": false,
+                "position": {
+                    "x": 250,
+                    "y": 50
+                },
+                "data": {
+                    "label": "API Gateway"
+                },
+                "events": {}
+            },
+            "targetNode": {
+                "id": "4",
+                "type": "custom",
+                "dimensions": {
+                    "width": 140,
+                    "height": 24
+                },
+                "computedPosition": {
+                    "x": 495,
+                    "y": 133.5,
+                    "z": 0
+                },
+                "handleBounds": {
+                    "source": [
+                        {
+                            "id": "output",
+                            "type": "source",
+                            "nodeId": "4",
+                            "position": "right",
+                            "x": 136,
+                            "y": 4,
+                            "width": 8,
+                            "height": 16
+                        }
+                    ],
+                    "target": [
+                        {
+                            "id": "input",
+                            "type": "target",
+                            "nodeId": "4",
+                            "position": "left",
+                            "x": -4,
+                            "y": 4,
+                            "width": 8,
+                            "height": 16
+                        }
+                    ]
+                },
+                "selected": false,
+                "dragging": false,
+                "resizing": false,
+                "initialized": false,
+                "isParent": false,
+                "position": {
+                    "x": 495,
+                    "y": 133.5
+                },
+                "data": {
+                    "label": "Database"
+                },
+                "events": {}
+            },
+            "sourceX": 394,
+            "sourceY": 62,
+            "targetX": 491,
+            "targetY": 145.5
+        },
+        {
+            "id": "e-3-4-1781193866730",
+            "type": "custom-edge",
+            "source": "3",
+            "target": "4",
+            "sourceHandle": "output",
+            "targetHandle": "input",
+            "data": {
+                "tags": [],
+                "edgeType": "default"
+            },
+            "events": {},
+            "label": "",
+            "markerEnd": "arrowclosed",
+            "animated": true,
+            "sourceNode": {
+                "id": "3",
+                "type": "custom",
+                "dimensions": {
+                    "width": 140,
+                    "height": 24
+                },
+                "computedPosition": {
+                    "x": 400,
+                    "y": 200,
+                    "z": 0
+                },
+                "handleBounds": {
+                    "source": [
+                        {
+                            "id": "output",
+                            "type": "source",
+                            "nodeId": "3",
+                            "position": "right",
+                            "x": 136,
+                            "y": 4,
+                            "width": 8,
+                            "height": 16
+                        }
+                    ],
+                    "target": [
+                        {
+                            "id": "input",
+                            "type": "target",
+                            "nodeId": "3",
+                            "position": "left",
+                            "x": -4,
+                            "y": 4,
+                            "width": 8,
+                            "height": 16
+                        }
+                    ]
+                },
+                "selected": false,
+                "dragging": false,
+                "resizing": false,
+                "initialized": false,
+                "isParent": false,
+                "position": {
+                    "x": 400,
+                    "y": 200
+                },
+                "data": {
+                    "label": "Data Service"
+                },
+                "events": {}
+            },
+            "targetNode": {
+                "id": "4",
+                "type": "custom",
+                "dimensions": {
+                    "width": 140,
+                    "height": 24
+                },
+                "computedPosition": {
+                    "x": 495,
+                    "y": 133.5,
+                    "z": 0
+                },
+                "handleBounds": {
+                    "source": [
+                        {
+                            "id": "output",
+                            "type": "source",
+                            "nodeId": "4",
+                            "position": "right",
+                            "x": 136,
+                            "y": 4,
+                            "width": 8,
+                            "height": 16
+                        }
+                    ],
+                    "target": [
+                        {
+                            "id": "input",
+                            "type": "target",
+                            "nodeId": "4",
+                            "position": "left",
+                            "x": -4,
+                            "y": 4,
+                            "width": 8,
+                            "height": 16
+                        }
+                    ]
+                },
+                "selected": false,
+                "dragging": false,
+                "resizing": false,
+                "initialized": false,
+                "isParent": false,
+                "position": {
+                    "x": 495,
+                    "y": 133.5
+                },
+                "data": {
+                    "label": "Database"
+                },
+                "events": {}
+            },
+            "sourceX": 544,
+            "sourceY": 212,
+            "targetX": 491,
+            "targetY": 145.5
+        }
+    ],
+    "timestamp": "2026-06-11T16:04:30.872Z"
+}
