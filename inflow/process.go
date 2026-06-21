@@ -72,9 +72,6 @@ func NewProcess(startNodeId string, opts ...func(*Process)) (*Process, error) {
 	if p.req.Context.Setter == "" {
 		p.req.Context.Setter = backend.contextSetSvcTopic.MakeReqSubjectWithParams(vars)
 	}
-	// if p.req.Context.HeaderUpdate == "" {
-	// 	p.req.Context.HeaderUpdate = backend.ctxHeaderSetSvcTopic.MakeReqSubjectWithParams(vars)
-	// }
 
 	if p.req.Flow.GetFlow == "" {
 		p.req.Flow.GetFlow = backend.flowGetSvcTopic.MakeReqSubjectWithParams(vars)

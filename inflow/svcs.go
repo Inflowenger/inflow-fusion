@@ -9,7 +9,6 @@ import (
 type IInflowService interface {
 	RetrieveContext(msg *nats.Msg)
 	UpdateContext(msg *nats.Msg)
-	// UpdateContextHeader(msg *nats.Msg) 
 	RetrieveFlow(msg *nats.Msg) 
 }
 

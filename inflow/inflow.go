@@ -23,7 +23,6 @@ type InflowWire struct {
 	flowGetSvcTopic    svcHandler.SvcTopic
 	contextGetSvcTopic svcHandler.SvcTopic
 	contextSetSvcTopic svcHandler.SvcTopic
-	// ctxHeaderSetSvcTopic svcHandler.SvcTopic
 }
 
 func (iw *InflowWire) getCred() (models.Cred, error) {
@@ -130,23 +129,6 @@ func (iw *InflowWire) connectAndListen() error {
 		return err
 	}
 	iw.logger.Info(fmt.Sprintf("Subscription Registered On  : %s\n", iw.contextSetSvcTopic.ConvertToSubscribe()))
-
-	// _, err = con.Subscribe(iw.ctxHeaderSetSvcTopic.ConvertToSubscribe(), func(msg *nats.Msg) {
-	// 	if iw.SvcImpl == nil {
-	// 		fmt.Printf("New Request Recieved On Subscription Topic : %s\n", iw.ctxHeaderSetSvcTopic.ConvertToSubscribe())
-	// 		fmt.Printf("Subject : %s\n", msg.Subject)
-	// 		fmt.Printf("Data : %s\n", string(msg.Data))
-	// 		msg.Respond([]byte(`not implemented`))
-	// 		return
-	// 	}
-	// 	iw.SvcImpl.UpdateContextHeader(msg)
-
-	// })
-
-	// if err != nil {
-	// 	return err
-	// }
-	// iw.logger.Info(fmt.Sprintf("Subscription Registered On  : %s\n", iw.ctxHeaderSetSvcTopic.ConvertToSubscribe()))
 
 	return err
 }

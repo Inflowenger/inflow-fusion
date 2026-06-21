@@ -21,7 +21,6 @@ type Settings struct {
 type ContextTopicsPattern struct {
 	Getter       string `json:"get"`    //eg. inflow.{spaceId}.context.get.{contextId}
 	Setter       string `json:"update"` //eg. inflow.{spaceId}.context.set.{contextId}
-	// HeaderUpdate string `json:"header"` //eg. inflow.{spaceId}.header.set.{contextId}
 	ContextId    string `json:"contextId"`
 }
 
