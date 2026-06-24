@@ -2,7 +2,6 @@ package etc
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	gohttpclient "github.com/bozd4g/go-http-client"
@@ -29,15 +28,15 @@ func SendHttpPost(c context.Context, headers map[string]string, address string, 
 		reqOpts = append(reqOpts, gohttpclient.WithHeader(hKey, hv))
 	}
 
-	response, err := client.Post(c, "", reqOpts...)
-	if err != nil {
-		return nil, err
-	}
-	if response.Get().StatusCode != 200 {
+	return  client.Post(c, "", reqOpts...)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// if response.Get().StatusCode != 200 {
 
-		return nil, fmt.Errorf("registeration failed with status code %d , resposne: %s", response.Get().StatusCode,response.Body())
-	}
-	return response, err
+	// 	return nil, fmt.Errorf("registeration failed with status code %d , resposne: %s", response.Get().StatusCode,response.Body())
+	// }
+	// return response, err
 }
 func SendHttpGet[T any](c context.Context, headers map[string]string, address string, responseModel T) (*T, error) {
 	opts := []gohttpclient.ClientOption{

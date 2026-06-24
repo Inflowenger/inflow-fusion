@@ -1,18 +1,21 @@
 package inflow
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
+	"slices"
 	"time"
 
 	"github.com/Inflowenger/inflow-fusion/etc"
 	"github.com/Inflowenger/inflow-fusion/models"
+	"github.com/bytedance/sonic"
 )
 
 type Process struct {
-	req         models.ProcessRequest
-	resourceUrl string
+	req         models.ProcessRequest 
+	resourceUrl string	
 }
 
 func NewProcess(startNodeId string, opts ...func(*Process)) (*Process, error) {
@@ -74,7 +77,7 @@ func NewProcess(startNodeId string, opts ...func(*Process)) (*Process, error) {
 	}
 
 	if p.req.Flow.GetFlow == "" {
-		p.req.Flow.GetFlow = backend.flowGetSvcTopic.MakeReqSubjectWithParams(vars)
+		p.req.Flow.GetFlow = string(backend.flowGetSvcTopic)
 	}
 
 	return p, nil
@@ -115,4 +118,27 @@ func WithMeta(meta map[string]string) func(*Process) {
 	return func(p *Process) {
 		p.req.Meta = meta
 	}
+}
+func (p *Process)GetRequest()models.ProcessRequest{
+	return p.req
+}
+func (p *Process)GetResource()string{
+	return p.resourceUrl
+}
+func (p *Process) Exec(ctx context.Context) (*models.ProcessResponse,error) {
+	backend := GetInflowBackend()
+	if backend == nil {
+		return nil,errors.New("inflow backend init is required before any request")
+	}
+	url:=fmt.Sprintf("%s/engine",p.resourceUrl)
+	response, err := etc.SendHttpPost(ctx, map[string]string{"Authorization": backend.GetBearerToken()},url, p.req)
+	if err!=nil{
+		return nil,err
+	}
+	if !slices.Contains([]int{200,202},response.Status()){
+		return nil,fmt.Errorf("%s",response.Body())
+	}
+	newProcRes:=&models.ProcessResponse{}
+	err=sonic.Unmarshal(response.Body(),newProcRes)
+	return newProcRes,err
 }

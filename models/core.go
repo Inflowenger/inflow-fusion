@@ -2,6 +2,13 @@ package models
 const (
 	INFLOW_REST_PORT = "9001"
 )
+
+type ProcessResponse struct{
+	Data struct{
+		PID string `json:"pid"`
+	} `json:"data"`
+	Error any `json:"error"`
+}
 type ProcessRequest struct {
 	Context  ContextTopicsPattern `json:"context"`
 	Flow     FlowEngine           `json:"flow"`
@@ -27,5 +34,11 @@ type ContextTopicsPattern struct {
 type FlowEngine struct {
 	GetFlow    string `json:"get_flow"` //eg. inflow.{spaceId}.get.flow.{flowId}
 	FlowId     string `json:"flowId"`
-	EventTopic string `json:"events"`
+
+}
+
+
+type ContextDoc struct {
+	Data   string         `json:"data"`
+	Header map[string]any `json:"header"`
 }
