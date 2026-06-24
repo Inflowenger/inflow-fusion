@@ -3,7 +3,7 @@ package models
 import ()
 
 // builtins account and index
-const(
+const (
 	BUILTIN_SYS_ACCOUNT_INDEX     = "00000001"
 	BUILTIN_INFLOW_ACCOUNT_INDEX  = "00000002"
 	BUILTIN_PLUGINS_ACCOUNT_INDEX = "00000003"
@@ -13,9 +13,9 @@ const(
 	BUILTIN_PLUGINS_ACCOUNT = "plugins"
 )
 
-
 type NodeType string
 type EvidenceType string
+type CodeVariant string
 
 const (
 	VoidNodeType   NodeType = "voidNodeType"
@@ -24,6 +24,9 @@ const (
 	EventNodeType  NodeType = "eventNodeType"
 	PluginNodeType NodeType = "pluginNodeType"
 	RuleNodeType   NodeType = "ruleNodeType"
+
+	JavaScriptLang CodeVariant = "js"
+	OPALang        CodeVariant = "opa"
 )
 
 const (

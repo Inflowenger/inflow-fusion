@@ -18,7 +18,6 @@ func InitBackend(opts ...func(*InflowWire)) error {
 		flowGetSvcTopic:    svcHandler.DefaultGetFlowSvc,
 		contextGetSvcTopic: svcHandler.DefaultGetContextSvc,
 		contextSetSvcTopic: svcHandler.DefaultSetContextSvc,
-		// ctxHeaderSetSvcTopic: svcHandler.DefaultSetCtxHeaderSvc,
 	}
 	for _, opt := range opts {
 		opt(&inflow)

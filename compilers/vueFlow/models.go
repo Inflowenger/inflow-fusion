@@ -1,42 +1,48 @@
 package compilers
 
 type VueFlow struct {
-	Nodes []VueFlowNode `json:"nodes"`
-	Edges []Edges       `json:"edges"`
+	Nodes    []VueFlowNode `json:"nodes"`
+	Edges    []Edges       `json:"edges"`
+	Position FlowPosition  `json:"position"`
+}
+type FlowPosition struct {
+	X    float64 `json:"x"`
+	Y    float64 `json:"y"`
+	Zoom float64 `json:"zoom"`
 }
 type Dimensions struct {
-	Width  int `json:"width"`
-	Height int `json:"height"`
+	Width  float64 `json:"width"`
+	Height float64 `json:"height"`
 }
 type ComputedPosition struct {
-	X int `json:"x"`
-	Y int `json:"y"`
-	Z int `json:"z"`
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+	Z float64 `json:"z"`
 }
 type Position struct {
-	X int `json:"x"`
-	Y int `json:"y"`
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
 }
 
 type Source struct {
-	ID       string `json:"id"`
-	Type     string `json:"type"`
-	NodeID   string `json:"nodeId"`
-	Position string `json:"position"`
-	X        int    `json:"x"`
-	Y        int    `json:"y"`
-	Width    int    `json:"width"`
-	Height   int    `json:"height"`
+	ID       string  `json:"id"`
+	Type     string  `json:"type"`
+	NodeID   string  `json:"nodeId"`
+	Position string  `json:"position"`
+	X        float64 `json:"x"`
+	Y        float64 `json:"y"`
+	Width    float64 `json:"width"`
+	Height   float64 `json:"height"`
 }
 type Target struct {
-	ID       string `json:"id"`
-	Type     string `json:"type"`
-	NodeID   string `json:"nodeId"`
-	Position string `json:"position"`
-	X        int    `json:"x"`
-	Y        int    `json:"y"`
-	Width    int    `json:"width"`
-	Height   int    `json:"height"`
+	ID       string  `json:"id"`
+	Type     string  `json:"type"`
+	NodeID   string  `json:"nodeId"`
+	Position string  `json:"position"`
+	X        float64 `json:"x"`
+	Y        float64 `json:"y"`
+	Width    float64 `json:"width"`
+	Height   float64 `json:"height"`
 }
 type HandleBounds struct {
 	Source []Source `json:"source"`
@@ -74,10 +80,10 @@ type Edges struct {
 	Label        string      `json:"label"`
 	MarkerEnd    string      `json:"markerEnd"`
 	Animated     bool        `json:"animated"`
-	SourceX      int         `json:"sourceX"`
-	SourceY      int         `json:"sourceY"`
-	TargetX      int         `json:"targetX"`
-	TargetY      int         `json:"targetY"`
+	SourceX      float64     `json:"sourceX"`
+	SourceY      float64     `json:"sourceY"`
+	TargetX      float64     `json:"targetX"`
+	TargetY      float64     `json:"targetY"`
 	SourceNode   VueFlowNode `json:"sourceNode"`
 	TargetNode   VueFlowNode `json:"targetNode"`
 }

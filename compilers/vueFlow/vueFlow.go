@@ -4,16 +4,16 @@ import "github.com/Inflowenger/inflow-fusion/models"
 
 type VueFlowCompiler struct {
 	nodes   map[string]*models.Node
-	hook    func(VueFlowNode) *models.Node
+	hook    func(VueFlowNode) (*models.Node,error)
 	vueFlow VueFlow
 }
 
-func (v *VueFlowCompiler) SetHookFunc(f func(VueFlowNode) *models.Node) {
+func (v *VueFlowCompiler) SetHookFunc(f func(VueFlowNode) (*models.Node,error)) {
 	v.hook = f
 }
 func NewVueFlowCompiler(opts ...func(*VueFlowCompiler)) *VueFlowCompiler {
-	comp := &VueFlowCompiler{nodes: make(map[string]*models.Node), hook: func(fn VueFlowNode) *models.Node {
-		return &models.Node{Type: models.VoidNodeType, Title: fn.Type, ID: fn.ID}
+	comp := &VueFlowCompiler{nodes: make(map[string]*models.Node), hook: func(fn VueFlowNode) (*models.Node,error) {
+		return &models.Node{Type: models.VoidNodeType, Title: fn.Type, ID: fn.ID},nil
 
 	}}
 	for _, o := range opts {
@@ -21,27 +21,36 @@ func NewVueFlowCompiler(opts ...func(*VueFlowCompiler)) *VueFlowCompiler {
 	}
 	return comp
 }
-func WithEachNodeFunc(f func(VueFlowNode) *models.Node) func(*VueFlowCompiler) {
+func WithEachNodeFunc(f func(VueFlowNode) (*models.Node,error)) func(*VueFlowCompiler) {
 	return func(vfc *VueFlowCompiler) {
 		vfc.SetHookFunc(f)
 	}
 }
 
-func (v *VueFlowCompiler) Compile(startNodeId string, flow VueFlow) map[string]*models.Node {
+func (v *VueFlowCompiler) Compile(startNodeId string, flow VueFlow) (map[string]*models.Node,map[string]error) {
 	v.vueFlow = flow
+	cerror := make(map[string]error)
 	// create nodes
 	startNode := v.getNode(startNodeId)
 	if startNode != nil {
-		v.nodes[startNode.ID] = v.hook(*startNode)
-		v.walk(startNode)
+		n, err := v.hook(*startNode)
+		if err != nil {
+			cerror[startNode.ID] = err
+		}
+		v.nodes[startNode.ID] = n
+		if err := v.walk(startNode); err != nil {
+			cerror[startNode.ID] = err
+		}
 	}
-	return v.nodes
+	return v.nodes, cerror
 }
 
 func (v *VueFlowCompiler) walk(flowNode *VueFlowNode) error {
 
-	inflowNode := v.hook(*flowNode)
-
+	inflowNode ,err:= v.hook(*flowNode)
+	if err!=nil{
+		return err
+	}
 	// connect VueFlowNode
 	for _, e := range v.vueFlow.Edges {
 		if e.Source == flowNode.ID {
