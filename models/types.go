@@ -1,7 +1,5 @@
 package models
 
-import ()
-
 // builtins account and index
 const (
 	BUILTIN_SYS_ACCOUNT_INDEX     = "00000001"
@@ -18,12 +16,12 @@ type EvidenceType string
 type CodeVariant string
 
 const (
-	VoidNodeType   NodeType = "voidNodeType"
-	CodeNodeType   NodeType = "codeNodeType"
-	GoToNodeType   NodeType = "gotoNodeType"
-	EventNodeType  NodeType = "eventNodeType"
-	PluginNodeType NodeType = "pluginNodeType"
-	RuleNodeType   NodeType = "ruleNodeType"
+	VoidNodeType      NodeType = "voidNodeType"
+	CodeNodeType      NodeType = "codeNodeType"
+	GoToNodeType      NodeType = "gotoNodeType"
+	ExtrinsicNodeType NodeType = "extrinsicNodeType"
+	PluginNodeType    NodeType = "pluginNodeType"
+	RuleNodeType      NodeType = "ruleNodeType"
 
 	JavaScriptLang CodeVariant = "js"
 	OPALang        CodeVariant = "opa"

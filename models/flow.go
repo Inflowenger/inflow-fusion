@@ -5,6 +5,7 @@ type Flow struct {
 	Info  map[string]any `json:"info"`
 	Nodes []Node         `json:"nodes"`
 }
+
 func (f *Flow) ValidateNext() {
 	for i, el := range f.Nodes {
 		sanitizedNexts := []Next{}
@@ -33,14 +34,14 @@ func (f *Flow) FindNodeById(id string) *Node {
 }
 
 type Node struct {
-	ID         string         `json:"uuid"`
-	Type       NodeType       `json:"type"`
-	Title      string         `json:"title"`
-	Key        string         `json:"key"`
-	Scope      string         `json:"scope"` // json path
-	Code       *CodeRule      `json:"code,omitempty"`
-	GoTo       *GoToRule      `json:"goto,omitempty"`
-	Event      *EventRule     `json:"event,omitempty"`
+	ID    string    `json:"uuid"`
+	Type  NodeType  `json:"type"`
+	Title string    `json:"title"`
+	Key   string    `json:"key"`
+	Scope string    `json:"scope"` // json path
+	Code  *CodeRule `json:"code,omitempty"`
+	GoTo  *GoToRule `json:"goto,omitempty"`
+	Extrinsic  *ExtrinsicRule `json:"extrinsic,omitempty"`
 	Plugin     *PluginRule    `json:"plugin,omitempty"`
 	Contract   *ContractRule  `json:"contract,omitempty"`
 	Meta       map[string]any `json:"meta"`

@@ -156,10 +156,10 @@ func (isvc *ImplSvcExample) RetrieveFlow(msg *nats.Msg) {
 			},
 			{
 				ID:    "node8",
-				Type:  models.EventNodeType,
+				Type:  models.ExtrinsicNodeType,
 				Scope: "$.node8",
 				Key:   "result",
-				Event: &models.EventRule{
+				Extrinsic: &models.ExtrinsicRule{
 					Subject: "my.internal.svc.persist.task",
 					Data:    map[string]any{"taskId": 123, "status": "done"},
 				},

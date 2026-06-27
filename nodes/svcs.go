@@ -7,7 +7,7 @@ import (
 )
 
 type EventSvcNode struct {
-	models.EventRule
+	models.ExtrinsicRule
 	UniqId string `json:"uniqId"`
 }
 
@@ -17,13 +17,13 @@ func (n *EventSvcNode) SetId(uniqId string) {
 }
 
 func (n *EventSvcNode) GetInflowNodeType() models.NodeType {
-	return models.EventNodeType
+	return models.ExtrinsicNodeType
 }
 
 func NewSvcNode(subject string, opts ...func(*EventSvcNode)) *EventSvcNode {
 
 	svcNode := &EventSvcNode{
-		EventRule: models.EventRule{
+		ExtrinsicRule: models.ExtrinsicRule{
 			Subject: subject,
 		},
 		UniqId: etc.UUID(),

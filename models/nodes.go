@@ -1,15 +1,15 @@
 package models
 
 type PluginRule struct {
-	InfraIsolated  InfraIsolated  `json:"infra_isolated" bson:"infra_isolated"`
-	Request        string         `json:"request" bson:"request"`
-	SubjectPrefix  string         `json:"subject_prefix" bson:"subject_prefix"`
+	InfraIsolated   InfraIsolated  `json:"infra_isolated" bson:"infra_isolated"`
+	Request         string         `json:"request" bson:"request"`
+	SubjectPrefix   string         `json:"subject_prefix" bson:"subject_prefix"`
 	CancelAfterIdle int8           `json:"idle_min" bson:"idle_min"`
-	Body           map[string]any `json:"body" bson:"body"`
+	Body            map[string]any `json:"body" bson:"body"`
 }
 type InfraIsolated struct {
 	Account string `json:"account" bson:"account"`
-	Seed	string `json:"seed" bson:"seed"`
+	Seed    string `json:"seed" bson:"seed"`
 	Cred    string `json:"cred" bson:"cred"`
 	Url     string `json:"url" bson:"url"`
 }
@@ -31,7 +31,7 @@ type GoToRule struct {
 	EndAt Next `json:"end"`
 }
 
-type EventRule struct {
+type ExtrinsicRule struct {
 	InfraIsolated     InfraIsolated  `json:"infra_isolated" bson:"infra_isolated"`
 	Subject           string         `json:"subject"`
 	Data              map[string]any `json:"data"`
