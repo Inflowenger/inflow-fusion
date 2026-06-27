@@ -6,23 +6,23 @@ import (
 	natsHandler "github.com/Inflowenger/inflow-fusion/nats"
 )
 
-type EventSvcNode struct {
+type EtrinsicSvcNode struct {
 	models.ExtrinsicRule
 	UniqId string `json:"uniqId"`
 }
 
 // impl INode
-func (n *EventSvcNode) SetId(uniqId string) {
+func (n *EtrinsicSvcNode) SetId(uniqId string) {
 	n.UniqId = uniqId
 }
 
-func (n *EventSvcNode) GetInflowNodeType() models.NodeType {
+func (n *EtrinsicSvcNode) GetInflowNodeType() models.NodeType {
 	return models.ExtrinsicNodeType
 }
 
-func NewSvcNode(subject string, opts ...func(*EventSvcNode)) *EventSvcNode {
+func NewSvcNode(subject string, opts ...func(*EtrinsicSvcNode)) *EtrinsicSvcNode {
 
-	svcNode := &EventSvcNode{
+	svcNode := &EtrinsicSvcNode{
 		ExtrinsicRule: models.ExtrinsicRule{
 			Subject: subject,
 		},
@@ -41,8 +41,8 @@ func NewSvcNode(subject string, opts ...func(*EventSvcNode)) *EventSvcNode {
 	return svcNode
 }
 
-func WithIsolated(isolated models.InfraIsolated) func(*EventSvcNode) {
-	return func(esn *EventSvcNode) {
+func WithIsolated(isolated models.InfraIsolated) func(*EtrinsicSvcNode) {
+	return func(esn *EtrinsicSvcNode) {
 		esn.InfraIsolated = isolated
 	}
 }

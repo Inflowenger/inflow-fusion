@@ -43,7 +43,7 @@ func TestBackend(t *testing.T) {
 	///
 	//Insert saveEntitynode to Nodes to show in frontend side
 	nodeInmydb := struct {
-		nodes.EventSvcNode `json:",inline" bson:",inline"`
+		nodes.EtrinsicSvcNode `json:",inline" bson:",inline"`
 		UniqID             string `json:"id" bson:"_id"`
 	}{}
 	InsertNodeTodb(nodeInmydb)
