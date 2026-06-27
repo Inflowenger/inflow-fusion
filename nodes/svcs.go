@@ -20,7 +20,7 @@ func (n *EtrinsicSvcNode) GetInflowNodeType() models.NodeType {
 	return models.ExtrinsicNodeType
 }
 
-func NewSvcNode(subject string, opts ...func(*EtrinsicSvcNode)) *EtrinsicSvcNode {
+func NewExtrinsicSvcNode(subject string, opts ...func(*EtrinsicSvcNode)) *EtrinsicSvcNode {
 
 	svcNode := &EtrinsicSvcNode{
 		ExtrinsicRule: models.ExtrinsicRule{
