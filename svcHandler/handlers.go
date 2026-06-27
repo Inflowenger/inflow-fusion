@@ -7,7 +7,7 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-func ImplHandlerOnSubject(subject SvcTopic, handler func(header nats.Header, data []byte) ([]byte, error)) error {
+func ImplHandlerOnSubject(name string,subject SvcTopic, handler func(header nats.Header, data []byte) ([]byte, error)) error {
 
 	con, err := natsHandler.GetInfraNats()
 	if err != nil {
@@ -29,6 +29,6 @@ func ImplHandlerOnSubject(subject SvcTopic, handler func(header nats.Header, dat
 	if err != nil {
 		return err
 	}
-
+	GetExtrinsicSvcs().set(name,subject)
 	return nil
 }

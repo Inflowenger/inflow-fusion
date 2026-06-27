@@ -6,25 +6,26 @@ import (
 	natsHandler "github.com/Inflowenger/inflow-fusion/nats"
 )
 
-type EtrinsicSvcNode struct {
+type ExtrinsicSvcNode struct {
 	models.ExtrinsicRule
 	UniqId string `json:"uniqId"`
 }
 
 // impl INode
-func (n *EtrinsicSvcNode) SetId(uniqId string) {
+func (n *ExtrinsicSvcNode) SetId(uniqId string) {
 	n.UniqId = uniqId
 }
 
-func (n *EtrinsicSvcNode) GetInflowNodeType() models.NodeType {
+func (n *ExtrinsicSvcNode) GetInflowNodeType() models.NodeType {
 	return models.ExtrinsicNodeType
 }
 
-func NewExtrinsicSvcNode(subject string, opts ...func(*EtrinsicSvcNode)) *EtrinsicSvcNode {
+func NewExtrinsicSvcNode(subject string, opts ...func(*ExtrinsicSvcNode)) *ExtrinsicSvcNode {
 
-	svcNode := &EtrinsicSvcNode{
+	svcNode := &ExtrinsicSvcNode{
 		ExtrinsicRule: models.ExtrinsicRule{
-			Subject: subject,
+			Subject:           subject,
+			ReqTimeoutSecound: 5,
 		},
 		UniqId: etc.UUID(),
 	}
@@ -41,8 +42,8 @@ func NewExtrinsicSvcNode(subject string, opts ...func(*EtrinsicSvcNode)) *Etrins
 	return svcNode
 }
 
-func WithIsolated(isolated models.InfraIsolated) func(*EtrinsicSvcNode) {
-	return func(esn *EtrinsicSvcNode) {
+func WithIsolated(isolated models.InfraIsolated) func(*ExtrinsicSvcNode) {
+	return func(esn *ExtrinsicSvcNode) {
 		esn.InfraIsolated = isolated
 	}
 }
