@@ -77,6 +77,23 @@ func (iw *InflowWire) GetLogger() *slog.Logger {
 
 	return iw.logger
 }
+func (iw *InflowWire) GetAccountByKey(key string) (*models.Account,error) {
+	response, err := etc.SendHttpGet(context.Background(), map[string]string{"Authorization": iw.GetBearerToken()},
+		fmt.Sprintf("%s/account/id/%s", iw.Infra, key),
+		struct {
+			Data  *models.Account `json:"data"`
+			Error any             `json:"error"`
+		}{},
+	)
+	if err != nil {
+		return nil, err
+	}
+	if response.Data == nil || response.Error != nil {
+		return nil, fmt.Errorf("given account not found or any internal error occurred")
+	}
+
+	return response.Data, nil
+}
 func (iw *InflowWire) connectAndListen() error {
 	con, err := natsHandler.GetInfraNats()
 	if err != nil {

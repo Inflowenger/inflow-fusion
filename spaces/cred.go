@@ -1,19 +1,13 @@
-package nats
+package InfraSpaces
 
 import (
 	"encoding/base64"
-	"fmt"
-	"strings"
 
-	"github.com/Inflowenger/inflow-fusion/etc"
 	"github.com/Inflowenger/inflow-fusion/models"
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
 )
 
-const (
-	NATS_DEFAULT_INBOX = "_INBOX"
-)
 
 func CreateUserCredential(accountSeed string, user models.UserCredGenInput) (*models.Cred, error) {
 	userKP, _ := nkeys.CreateUser()
@@ -41,17 +35,5 @@ func CreateUserCredential(accountSeed string, user models.UserCredGenInput) (*mo
 
 }
 
-func GetInboxConfigWithPluginId(pluginUid string) string {
-	return fmt.Sprintf("_INBOX.%s", etc.UuidLastPart(pluginUid))
-}
 
-func GetInboxPrefix(userClaim *jwt.UserClaims) string {
-	if tags := userClaim.GetTags(); len(tags) > 0 {
-		for _, v := range tags {
-			if strings.HasPrefix(v, NATS_DEFAULT_INBOX) {
-				return v
-			}
-		}
-	}
-	return NATS_DEFAULT_INBOX
-}
+

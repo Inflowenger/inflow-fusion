@@ -10,8 +10,8 @@ import (
 	"github.com/Inflowenger/inflow-fusion/etc"
 	"github.com/Inflowenger/inflow-fusion/inflow"
 	"github.com/Inflowenger/inflow-fusion/models"
-	natsHandler "github.com/Inflowenger/inflow-fusion/nats"
 	"github.com/Inflowenger/inflow-fusion/nodes"
+	InfraSpaces "github.com/Inflowenger/inflow-fusion/spaces"
 	"github.com/Inflowenger/inflow-fusion/svcHandler"
 	"github.com/bytedance/sonic"
 	"github.com/nats-io/nats.go"
@@ -92,8 +92,8 @@ func TestSafePluginPermission(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	perm := nodes.PluginCredentialPermission("remote-client-user", plugin.UniqId, plugin.InfraIsolated.Account)
-	cred, err := natsHandler.CreateUserCredential(plugin.InfraIsolated.Seed, perm)
+	perm := InfraSpaces.PluginCredentialPermission("remote-client-user", plugin.UniqId, plugin.InfraIsolated.Account)
+	cred, err := InfraSpaces.CreateUserCredential(plugin.InfraIsolated.Seed, perm)
 	if err != nil {
 		panic(err)
 	}
