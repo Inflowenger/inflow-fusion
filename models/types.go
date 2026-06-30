@@ -29,4 +29,5 @@ const (
 
 const (
 	INFLOW_PLUGIN_PROTO_PREFIX = "inflow.cpu"
+	INFLOW_PLUGIN_V1_PREFIX = "inflow.v1"
 )

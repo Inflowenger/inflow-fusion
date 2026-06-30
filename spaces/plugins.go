@@ -47,6 +47,17 @@ func GetCredOnBuiltinPluginAcc(pluginName string) (*models.InfraIsolated, error)
 	}
 	return &space, nil
 }
+func GetAccountById(accountId  string) (*models.Account,error){
+	acc, ok := GetInfraSpaces().get(accountId)
+	if !ok {
+		var err error
+		acc, err = fetchAccount(accountId)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return acc,nil
+}
 func GetAccountCred(accountId ,pluginName string) (*models.InfraIsolated,error){
 	acc, ok := GetInfraSpaces().get(accountId)
 	if !ok {
@@ -84,23 +95,33 @@ func fetchAccount(accountId string) (*models.Account, error) {
 	GetInfraSpaces().set(accountId, acc)
 	return acc, nil
 }
-func PluginCredentialPermission(userName, pluginUniqId, accountPub string) models.UserCredGenInput {
+func PluginCredentialStrictPermission(userName, pluginUniqId, accountPub string) models.UserCredGenInput {
 	inboxPattern := GetInboxConfigWithPluginId(pluginUniqId)
 	perm := models.UserCredGenInput{
 		Name:    userName,
 		Account: accountPub,
 		Pub: jwt.Permission{Allow: []string{
 			fmt.Sprintf("%s.%s.>", models.INFLOW_PLUGIN_PROTO_PREFIX, pluginUniqId),
+			fmt.Sprintf("%s.>", "_INBOX"),
+
 		}},
 		Sub: jwt.Permission{Allow: []string{
 			fmt.Sprintf("%s.>", inboxPattern),
 			fmt.Sprintf("%s.%s.>", models.INFLOW_PLUGIN_PROTO_PREFIX, pluginUniqId),
+			fmt.Sprintf("%s.%s.>",models.INFLOW_PLUGIN_V1_PREFIX,pluginUniqId),
 		}},
 		Tags: jwt.TagList{inboxPattern},
 	}
 	return perm
 }
+func PluginCredentialOpenPermission(userName, pluginUniqId, accountPub string) models.UserCredGenInput {
+	perm := models.UserCredGenInput{
+		Name:    userName,
+		Account: accountPub,
 
+	}
+	return perm
+}
 func GetInboxConfigWithPluginId(pluginUid string) string {
 	return fmt.Sprintf("_INBOX.%s", etc.UuidLastPart(pluginUid))
 }
