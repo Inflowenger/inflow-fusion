@@ -25,7 +25,7 @@ func NewProcess(startNodeId string, opts ...func(*Process)) (*Process, error) {
 		req: models.ProcessRequest{StartNodeId: startNodeId,
 			Settings: models.Settings{
 				RequestTimeOut:   5,
-				ProcessNodeLimit: 1000,
+				ProcessNodeLimit: 500,
 				ExecuteTimeOut:   int64(time.Hour.Seconds())}}}
 	for _, o := range opts {
 		o(p)

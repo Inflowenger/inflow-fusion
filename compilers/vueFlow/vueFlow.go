@@ -4,16 +4,16 @@ import "github.com/Inflowenger/inflow-fusion/models"
 
 type VueFlowCompiler struct {
 	nodes   map[string]*models.Node
-	hook    func(VueFlowNode) (*models.Node,error)
+	hook    func(VueFlowNode) (*models.Node, error)
 	vueFlow VueFlow
 }
 
-func (v *VueFlowCompiler) SetHookFunc(f func(VueFlowNode) (*models.Node,error)) {
+func (v *VueFlowCompiler) SetHookFunc(f func(VueFlowNode) (*models.Node, error)) {
 	v.hook = f
 }
 func NewVueFlowCompiler(opts ...func(*VueFlowCompiler)) *VueFlowCompiler {
-	comp := &VueFlowCompiler{nodes: make(map[string]*models.Node), hook: func(fn VueFlowNode) (*models.Node,error) {
-		return &models.Node{Type: models.VoidNodeType, Title: fn.Type, ID: fn.ID},nil
+	comp := &VueFlowCompiler{nodes: make(map[string]*models.Node), hook: func(fn VueFlowNode) (*models.Node, error) {
+		return &models.Node{Type: models.VoidNodeType, Title: fn.Type, ID: fn.ID}, nil
 
 	}}
 	for _, o := range opts {
@@ -21,13 +21,13 @@ func NewVueFlowCompiler(opts ...func(*VueFlowCompiler)) *VueFlowCompiler {
 	}
 	return comp
 }
-func WithEachNodeFunc(f func(VueFlowNode) (*models.Node,error)) func(*VueFlowCompiler) {
+func WithEachNodeFunc(f func(VueFlowNode) (*models.Node, error)) func(*VueFlowCompiler) {
 	return func(vfc *VueFlowCompiler) {
 		vfc.SetHookFunc(f)
 	}
 }
 
-func (v *VueFlowCompiler) Compile(startNodeId string, flow VueFlow) (map[string]*models.Node,map[string]error) {
+func (v *VueFlowCompiler) Compile(startNodeId string, flow VueFlow) (map[string]*models.Node, map[string]error) {
 	v.vueFlow = flow
 	cerror := make(map[string]error)
 	// create nodes
@@ -47,10 +47,11 @@ func (v *VueFlowCompiler) Compile(startNodeId string, flow VueFlow) (map[string]
 
 func (v *VueFlowCompiler) walk(flowNode *VueFlowNode) error {
 
-	inflowNode ,err:= v.hook(*flowNode)
-	if err!=nil{
+	inflowNode, err := v.hook(*flowNode)
+	if err != nil {
 		return err
 	}
+
 	// connect VueFlowNode
 	for _, e := range v.vueFlow.Edges {
 		if e.Source == flowNode.ID {
@@ -62,20 +63,22 @@ func (v *VueFlowCompiler) walk(flowNode *VueFlowNode) error {
 					"label":      e.Label,
 					"edgeHandle": e.SourceHandle,
 				}})
-			if _, ok := v.nodes[e.Target]; ok {
-				continue
-			}
-			next := v.getNode(e.Target)
 
-			err := v.walk(next)
-			if err != nil {
-				return err
-			}
 		}
 
 	}
-
 	v.nodes[flowNode.ID] = inflowNode
+	for _, e := range inflowNode.Next {
+		if _, ok := v.nodes[e.NodeId]; ok {
+			continue
+		}
+		next := v.getNode(e.NodeId)
+
+		err := v.walk(next)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

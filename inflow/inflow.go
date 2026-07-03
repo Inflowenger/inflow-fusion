@@ -149,3 +149,8 @@ func (iw *InflowWire) connectAndListen() error {
 
 	return err
 }
+
+
+func (iw *InflowWire) GetInflowEventsPipe() (*nats.Conn, error) {
+	return natsHandler.GetInfraNats()
+}
