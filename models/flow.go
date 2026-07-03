@@ -34,26 +34,26 @@ func (f *Flow) FindNodeById(id string) *Node {
 }
 
 type Node struct {
-	ID    string    `json:"uuid"`
-	Type  NodeType  `json:"type"`
-	Title string    `json:"title"`
-	Key   string    `json:"key"`
-	Scope string    `json:"scope"` // json path
-	Code  *CodeRule `json:"code,omitempty"`
-	GoTo  *GoToRule `json:"goto,omitempty"`
-	Extrinsic  *ExtrinsicRule `json:"extrinsic,omitempty"`
-	Plugin     *PluginRule    `json:"plugin,omitempty"`
-	Contract   *ContractRule  `json:"contract,omitempty"`
-	Meta       map[string]any `json:"meta"`
-	Tags       string         `json:"tags"`
-	Next       []Next         `json:"next"`
-	Depends    []string       `json:"depends"`      // wait to complete all inbounds nodes finished
-	NextFilter []string       `json:"next_filters"` // filter next nodes by edges tags
+	ID        string         `json:"uuid"`
+	Type      NodeType       `json:"type"`
+	Title     string         `json:"title"`
+	Key       string         `json:"key"`
+	Scope     string         `json:"scope"` // json path
+	Code      *CodeRule      `json:"code,omitempty"`
+	GoTo      *GoToRule      `json:"goto,omitempty"`
+	Extrinsic *ExtrinsicRule `json:"extrinsic,omitempty"`
+	Plugin    *PluginRule    `json:"plugin,omitempty"`
+	Contract  *ContractRule  `json:"contract,omitempty"`
+	Meta      map[string]any `json:"meta"`
+	Tags      string         `json:"tags"`
+	Next      []Next         `json:"next"`
+	Depends   []string       `json:"depends"` // wait to complete all inbounds nodes finished
 }
 
 type Next struct {
 	FlowId string         `json:"flowId"`
 	NodeId string         `json:"nodeId"`
 	Tags   []string       `json:"tags"`
+	Active int8           `json:"active"` // 0: active, -1: inactive,
 	Meta   map[string]any `json:"meta"`
 }
