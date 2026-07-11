@@ -9,6 +9,7 @@ import (
 	"github.com/Inflowenger/inflow-fusion/models"
 	natsHandler "github.com/Inflowenger/inflow-fusion/nats"
 	"github.com/Inflowenger/inflow-fusion/svcHandler"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/nats-io/nats.go"
 )
 
@@ -44,7 +45,31 @@ func (iw *InflowWire) GetBearerToken() string {
 	return fmt.Sprintf("Bearer %s", iw.token)
 
 }
+func (iw *InflowWire) GetResourceBearerToken(url string) string {
+	for _,r:=range iw.resources{
+		if r.Url ==  url{
+			if r.RegisterPortal.JwtSecret == ""{
+				break // to return infra bearer token
+			}
+			return makeTokenWithHs256(r.RegisterPortal.JwtSecret)
+		}
+	}
+	return fmt.Sprintf("Bearer %s", iw.token)
 
+}
+func makeTokenWithHs256(secret string)string{
+		token := jwt.New(jwt.SigningMethodHS256)
+		token.Claims = jwt.MapClaims{"admin": true}
+		if secret == ""{
+			return ""
+		}
+		encoded, err := token.SignedString([]byte(secret))
+		if err!=nil{
+			fmt.Println("in sign token with given secret error occurred ")
+			return ""
+		}
+		return encoded
+}
 // Get all Inflow Instance (registered inflow instances) from infra and Add to Round-Robin struct to use by create new process function
 func (iw *InflowWire) ReloadResources(limit int) ([]models.RegisteredInflow, error) {
 

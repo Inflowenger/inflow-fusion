@@ -51,11 +51,13 @@ type Portal struct {
 	Title      string         `json:"title"`
 	SubsPrefix string         `json:"subscribe_prefix"`
 	Path       string         `json:"path"`
+	JwtSecret  string         `json:"jwt_secret"`
+	Config     map[string]any `json:"config"`
 }
 
-type InflowResourcesList struct{
-	Data struct{
+type InflowResourcesList struct {
+	Data struct {
 		List []RegisteredInflow `json:"list"`
-	 } `json:"data"`
+	} `json:"data"`
 	Error any `json:"error"`
 }

@@ -16,8 +16,12 @@ import (
 type Process struct {
 	req         models.ProcessRequest 
 	resourceUrl string	
+	resourceToken string
 }
-
+func StopProcess(ctx context.Context, pid ,resourceUrl string) (*models.ProcessResponse,error) {
+	p:=&Process{req: models.ProcessRequest{PID: pid}, resourceUrl: resourceUrl}
+	return p.Stop(ctx)
+}
 func NewProcess(startNodeId string, opts ...func(*Process)) (*Process, error) {
 
 	p := &Process{
@@ -43,6 +47,7 @@ func NewProcess(startNodeId string, opts ...func(*Process)) (*Process, error) {
 			return nil, errors.New("no any inflow resource found.")
 		} else {
 			p.resourceUrl = candidInflow.Url
+			p.resourceToken = candidInflow.Token
 		}
 	}
 	resurl, err := url.Parse(p.resourceUrl)
@@ -57,7 +62,9 @@ func NewProcess(startNodeId string, opts ...func(*Process)) (*Process, error) {
 		p.resourceUrl = fmt.Sprintf("http://%s", p.resourceUrl)
 
 	}
-
+	if p.req.StartNodeId == "" {
+		return nil, errors.New("startNodeId is required")
+	}
 	if p.req.Context.ContextId == "" {
 		return nil, errors.New("contextId is required")
 	}
@@ -88,7 +95,11 @@ func WithProcessTimeout(t time.Duration) func(*Process) {
 		p.req.Settings.ExecuteTimeOut = int64(t.Seconds())
 	}
 }
-
+func WithStartNode(startNodeId string) func(*Process) {
+	return func(p *Process) {
+		p.req.StartNodeId = startNodeId
+	}
+}
 func WithFlowId(flowId string) func(*Process) {
 	return func(p *Process) {
 		p.req.Flow.FlowId = flowId
@@ -104,12 +115,18 @@ func WithPID(processId string) func(*Process) {
 		p.req.PID = processId
 	}
 }
-func WithInflowInstanceUrl(url string) func(*Process) {
+func WithInflowToken(url ,token string) func(*Process) {
 	return func(p *Process) {
 		p.resourceUrl = url
+		p.resourceToken = token
 	}
 }
-
+func WithInflowJwtSecret(url ,secret string) func(*Process) {
+	return func(p *Process) {
+		p.resourceUrl = url
+		p.resourceToken = makeTokenWithHs256(secret)
+	}
+}
 /*
 meta data ship with headers in all registered services as index and query use
 also meta key value contribute for replace value in service subject pattern
@@ -126,12 +143,33 @@ func (p *Process)GetResource()string{
 	return p.resourceUrl
 }
 func (p *Process) Exec(ctx context.Context) (*models.ProcessResponse,error) {
-	backend := GetInflowBackend()
-	if backend == nil {
-		return nil,errors.New("inflow backend init is required before any request")
-	}
+	// backend := GetInflowBackend()
+	// if backend == nil {
+	// 	return nil,errors.New("inflow backend init is required before any request")
+	// }
 	url:=fmt.Sprintf("%s/engine",p.resourceUrl)
-	response, err := etc.SendHttpPost(ctx, map[string]string{"Authorization": backend.GetBearerToken()},url, p.req)
+	token:=fmt.Sprintf("Bearer %s",p.resourceToken)
+	if p.resourceToken == ""{
+		token = GetInflowBackend().GetBearerToken()
+	}
+	response, err := etc.SendHttpPost(ctx, map[string]string{"Authorization": token},url, p.req)
+	if err!=nil{
+		return nil,err
+	}
+	if !slices.Contains([]int{200,202},response.Status()){
+		return nil,fmt.Errorf("%s",response.Body())
+	}
+	newProcRes:=&models.ProcessResponse{}
+	err=sonic.Unmarshal(response.Body(),newProcRes)
+	return newProcRes,err
+}
+func (p *Process) Stop(ctx context.Context) (*models.ProcessResponse,error) {
+	// backend := GetInflowBackend()
+	// if backend == nil {
+	// 	return nil,errors.New("inflow backend init is required before any request")
+	// }
+	url:=fmt.Sprintf("%s/ps/stop/%s",p.resourceUrl, p.req.PID)
+	response, err := etc.SendHttpPost(ctx, map[string]string{"Authorization": fmt.Sprintf("Bearer %s",p.resourceToken)},url, p.req)
 	if err!=nil{
 		return nil,err
 	}

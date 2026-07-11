@@ -8,6 +8,7 @@ import (
 type InflowResource struct {
 	Name string
 	Url  string
+	Token string
 	Tags []string
 }
 
@@ -16,7 +17,7 @@ var resourceCandidate *roundrobin.RoundRobin[InflowResource]
 func SetResourceCandid(list []models.RegisteredInflow) (*roundrobin.RoundRobin[InflowResource], error) {
 	resourcesList := []*InflowResource{}
 	for _, el := range list {
-		resourcesList = append(resourcesList, &InflowResource{Name: el.Name, Url: el.Url, Tags: el.Tags})
+		resourcesList = append(resourcesList, &InflowResource{Token: makeTokenWithHs256(el.RegisterPortal.JwtSecret),Name: el.Name, Url: el.Url, Tags: el.Tags})
 	}
 	var err error
 	resourceCandidate, err = roundrobin.New(resourcesList...)
