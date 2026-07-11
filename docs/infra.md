@@ -98,24 +98,3 @@ svcHandler.ImplHandlerOnSubject("db_handler", svcHandler.SvcTopic("my.internal.s
 ```
 
 Handlers registered this way are also tracked in a process-local registry (`svcHandler.GetSvc` / `GetAllSvcs`), keyed by the `name` argument — useful if a compiler needs to resolve a logical service name back to its subject pattern (see [compilers/vueflow.md](compilers/vueflow.md)).
-
-## Error codes
-
-`models.FractalError` carries a `StatusFractal` code. These are returned by the SDK's own validation/wiring failures (not engine-internal errors):
-
-| Code | Constant | Meaning |
-|---|---|---|
-| 11 | `StopProcessByUser` | Process stopped by end user |
-| 12 | `StopProcessByCommandUser` | Process stopped by an operator/admin action |
-| 13 | `StopProcessByTimeoutWorkflow` | Process exceeded its configured timeout |
-| 14 | `FailedProcessWithError` | Process failed with an execution error |
-| 15 | `NoAnyRespond` | No response received in time |
-| 16 | `InternalError` | Generic internal error |
-| 17 | `InflowStopSignal` | Stop signal received from the engine |
-| 18 | `FailedInitInternalError` | Backend/init failure |
-| 19 | `InfraNoRespond` | Infra did not respond |
-| 20 | `InfraBadRequest` | Infra rejected the request |
-| 21 | `ProcessBadRequest` | Bad `ProcessRequest` |
-| 22 | `ProcessLimit` | Node execution limit reached |
-| 23 | `ProcessStopped` | Process already stopped |
-| 24 | `ProcessNodeDataBadRequest` | Bad node data during execution |
