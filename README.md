@@ -12,7 +12,7 @@
 
 Inflowenger is a workflow automation platform. A *flow* is a graph of *nodes* (branching logic, code steps, calls out to your services, sub-flow jumps, third-party plugins) typically authored in a visual editor. The platform's job is to **compile and execute that graph**; your backend's job is to **own the data**: the flow definitions, the execution context (the working data a running process reads/writes), and any business logic the flow needs to call out to.
 
-The two sides talk over [NATS](https://nats.io): the execution engine asks your backend for a flow definition or the current context, and your backend answers. This SDK implements that wiring so you only have to fill in the parts that are specific to your product — see [docs/architecture.md](docs/architecture.md) for the full picture and [docs/protocol.md](docs/protocol.md) for the exact subjects/endpoints involved.
+The two sides talk over [NATS](https://nats.io): the execution engine asks your backend for a flow definition or the current context, and your backend answers. This SDK implements that wiring so you only have to fill in the parts that are specific to your product — see [docs/architecture.md](docs/architecture.md) for the full picture and [docs/infra.md](docs/infra.md) for the exact subjects/endpoints involved.
 
 ## What does this SDK give you?
 
@@ -156,7 +156,7 @@ A fully runnable version of this (with an in-memory example flow) lives in [back
 ## Documentation
 
 - [docs/architecture.md](docs/architecture.md) — how infra, your backend, engine instances, and plugins fit together
-- [docs/protocol.md](docs/protocol.md) — the concrete REST endpoints and NATS subjects/wire formats
+- [docs/infra.md](docs/infra.md) — the concrete REST endpoints and NATS subjects/wire formats
 - [docs/nodes.md](docs/nodes.md) — every node type, its rule fields, and its builder API
 - [docs/compilers](docs/compilers) — how a frontend-authored graph is compiled into engine-ready nodes, and how to add support for a different graph library
 
