@@ -1,6 +1,7 @@
 package inflow
 
 import (
+	"fmt"
 	"log/slog"
 	"net/url"
 	"os"
@@ -29,6 +30,9 @@ func InitBackend(opts ...func(*InflowWire)) error {
 	if err != nil {
 		return err
 	}
+	if u.Scheme==""{
+		inflow.Infra = fmt.Sprintf("http://%s",inflow.Infra)
+	}
 	if inflow.hs == "" {
 		inflow.hs = u.Hostname()
 	}
@@ -44,9 +48,9 @@ func InitBackend(opts ...func(*InflowWire)) error {
 	return err
 }
 
-func WithInfraApi(url string) func(*InflowWire) {
+func WithInfraApi(infraurl string) func(*InflowWire) {
 	return func(iw *InflowWire) {
-		iw.Infra = url
+		iw.Infra = infraurl
 	}
 }
 
