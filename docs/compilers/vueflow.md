@@ -89,4 +89,4 @@ If your frontend needs to reference a backend-registered extrinsic service by a 
 
 - [README.md](README.md) — the general compiler contract, and how to add one for a different graph library
 - [../nodes.md](../nodes.md) — what to build inside your hook for each node type
-- [../protocol.md](../protocol.md) — how the compiled node map is actually served to an engine instance
+- [../infra.md](../infra.md) — how the compiled node map is actually served to an engine instance

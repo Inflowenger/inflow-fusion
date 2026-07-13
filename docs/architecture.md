@@ -1,6 +1,6 @@
 # Architecture
 
-This document explains how the pieces of the Inflowenger platform relate to each other, and where a backend built with `inflow-fusion` sits in that picture. It intentionally stays at the concept level — for exact endpoints/subjects see [protocol.md](protocol.md).
+This document explains how the pieces of the Inflowenger platform relate to each other, and where a backend built with `inflow-fusion` sits in that picture. It intentionally stays at the concept level — for exact endpoints/subjects see [infra.md](infra.md).
 
 ## The four actors
 
@@ -32,6 +32,6 @@ Infra models accounts as NATS accounts, not just database rows. Three built-in a
 
 ## Next
 
-- [protocol.md](protocol.md) — exact REST endpoints, NATS subjects, and payload shapes
+- [infra.md](infra.md) — exact REST endpoints, NATS subjects, and payload shapes
 - [nodes.md](nodes.md) — what each node type does and how to build one
 - [compilers](compilers) — turning a frontend-authored graph into the node map the engine consumes

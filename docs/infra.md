@@ -1,4 +1,4 @@
-# Protocol reference
+# Infra & wire reference
 
 The concrete REST endpoints and NATS subjects `inflow-fusion` speaks. Useful if you're implementing the infra side, debugging traffic, or writing a backend in another language.
 

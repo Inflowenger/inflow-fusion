@@ -36,4 +36,4 @@ PRs for new compilers are welcome — open an issue first if the graph shape is 
 
 - [vueflow.md](vueflow.md) — the shipped Vue Flow / React Flow compiler
 - [../nodes.md](../nodes.md) — what to build inside a compiler's hook for each node type
-- [../protocol.md](../protocol.md) — how a compiled node map is actually served to an engine instance
+- [../infra.md](../infra.md) — how a compiled node map is actually served to an engine instance
