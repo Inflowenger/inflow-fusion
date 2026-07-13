@@ -1,4 +1,42 @@
-# Node reference
+# Nodes — the knowledge base
+
+This is the hub for everything about Inflowenger nodes: what the primitive node
+types are, how to build each one, and — most importantly — **how any node a user
+could want reduces to this small primitive set**. Each node type also has a
+dedicated deep-dive page under [nodes/](nodes/).
+
+## The primitives claim
+
+Inflowenger is a runtime whose logic is a **workflow graph** — a substrate for
+building large classes of systems (ERP, CRM, automation platforms) where an
+operator can define and change logic without redeploying. The platform ships only a
+**small set of primitive nodes**; every higher-level node compiles down to them, and
+the one open-ended extension point ([Plugin](nodes/plugin.md)) covers the rest.
+
+> With only these low-level node types you can build **any** higher-level node, and
+> therefore **any** system a workflow builder needs.
+
+The doc that makes that concrete — how an arbitrary custom node on a canvas (any
+title, any inputs, any number of outputs, any config form) becomes a primitive —
+is **[nodes/from-frontend.md](nodes/from-frontend.md)**. Read it after this page.
+
+## The node types
+
+| Node | `NodeType` | Role | Deep dive |
+|---|---|---|---|
+| **Void** | `VoidNodeType` | No-op: start markers, joins, dead-ends | [nodes/void.md](nodes/void.md) |
+| **Code** | `CodeNodeType` | Run JS/OPA logic, write result to context | [nodes/code.md](nodes/code.md) |
+| **Contract** | `RuleNodeType` | Branch: rule output = tags selecting `Next` | [nodes/contract.md](nodes/contract.md) |
+| **Extrinsic** | `ExtrinsicNodeType` | Call an internal service you own (NATS req/reply) | [nodes/extrinsic.md](nodes/extrinsic.md) |
+| **Plugin** | `PluginNodeType` | Hand off to a live external process (own UI + jobs) | [nodes/plugin.md](nodes/plugin.md) |
+| **GoTo** | `GoToNodeType` | Jump into another/the same flow and return | [nodes/goto.md](nodes/goto.md) |
+
+Primitive vs. higher-level: Code/Contract/Extrinsic/GoTo/Void are *compiled*
+primitives. **Plugin** is the exception — it does not compile away; it's a real
+external process, which is what makes it the platform's richest, open-ended node
+(see [nodes/plugin.md](nodes/plugin.md)).
+
+## The shared node shape
 
 A flow (`models.Flow`) is a list of `models.Node`. Every node shares this shape:
 
@@ -29,134 +67,55 @@ type Next struct {
 }
 ```
 
-Exactly one of `Code`/`GoTo`/`Extrinsic`/`Plugin`/`Contract` is populated, matching `Type`. `nodes.INode` (`SetId`, `GetInflowNodeType`) is the small interface every builder below implements, which is what lets `nodes.WithUniqId[T](id)` work generically across all of them.
+Exactly one of `Code`/`GoTo`/`Extrinsic`/`Plugin`/`Contract` is populated, matching
+`Type`. The universal fields — `Title`, `Key` (output destination in context),
+`Scope` (the JSONPath slice the node reads/writes) — apply to every type.
+`nodes.INode` (`SetId`, `GetInflowNodeType`) is the small interface every builder
+implements, which is what lets `nodes.WithUniqId[T](id)` work generically.
 
-## Void — `models.VoidNodeType`
+## Builders at a glance
 
-A no-op placeholder node (frequently used as a flow's start node, or as a branch target that does nothing). No rule data.
+Each type has a typed builder in the `nodes` package. Summaries below; full rule
+structs, languages, gotchas, and the frontend mapping are on each type's deep-dive
+page.
 
 ```go
+// Void — nodes/void.md
 n := nodes.NewVoidNode(nodes.WithUniqId[*nodes.VoidNode]("start"))
-```
 
-## Code — `models.CodeNodeType`
+// Code — nodes/code.md  (Lang "js" | "opa")
+js  := nodes.NewJsNode(`input.a = input.b * input.b; input`)
+opa := nodes.NewOpaNode(`result = {"f": 60}`, "result", nodes.WithCriteriaData(map[string]any{"threshold": 10}))
 
-Runs a snippet of logic and writes its result into the context. Supports two languages:
-
-```go
-type CodeRule struct {
-	Lang      string         // "js" or "opa"
-	LogicRule string         // the code
-	OpaData   map[string]any // extra data made available to an OPA snippet (as `data.*`)
-	OpaResult string         // for OPA: which binding in the rule to extract as the node's output
-}
-```
-
-```go
-jsNode := nodes.NewJsNode(`input.a = input.b * input.b; input`)
-
-opaNode := nodes.NewOpaNode(
-	`c = 5
-	 allow if { c < 10 }
-	 result = {"f": c*12, "allow": allow}`,
-	"result", // OpaResult
-	nodes.WithCriteriaData(map[string]any{"threshold": 10}), // -> OpaData
-)
-```
-
-- JS code reads/writes a variable called `input` (the node's scoped context); the last expression's value becomes the node's output.
-- OPA (Rego) code evaluates as a policy; `OpaResult` names the rule/binding whose value is extracted as the node's output, and `OpaData` is exposed to the policy as external `data`.
-
-## Contract — `models.RuleNodeType`
-
-A branching/decision node. Same two languages as Code, but its output is expected to be (or resolve to) a list of tags used to select which of the node's `Next` entries fire:
-
-```go
-type ContractRule struct {
-	Lang       string         // "js" or "opa"
-	LogicRule  string
-	Conditions map[string]any // arbitrary criteria data available to the rule
-	OpaResult  string         // for OPA: which binding holds the resulting tag list
-}
-```
-
-```go
+// Contract — nodes/contract.md  (rule output is a tag list selecting Next entries)
 rule := nodes.NewJsRuleLogicNode(
 	nodes.WithContractLogicCode(`c = 8; if (c < data.threshold) { next = ["a"] } else { next = ["else"] }; next`),
 	nodes.WithContractConditions(map[string]any{"threshold": 10}),
 )
-// or, OPA flavored:
-rule := nodes.NewOpaRuleLogicNode("next",
-	nodes.WithContractLogicCode(`c = 8
-	 default next := ["else"]
-	 next := ["a", "b"] if { c < data.threshold }`),
-	nodes.WithContractConditions(map[string]any{"threshold": 10}),
-)
+
+// Extrinsic — nodes/extrinsic.md  (publish to a subject; reply = output)
+ext := nodes.NewExtrinsicSvcNode("my.internal.svc.persist.orders")
+
+// Plugin — nodes/plugin.md  (hand off to an external process)
+plugin, _ := nodes.NewPluginNode("jira", nodes.WithIdleWaitMinutes(30))
+
+// GoTo — nodes/goto.md  (jump into another flow and return)
+g := nodes.NewGotoNode(); g.From("flow-a", "node-3"); g.To("flow-a", "node-8")
 ```
 
-The resulting tag list (e.g. `["a"]`) is matched against each `Next.Tags` on this node — only matching transitions are followed, which is how conditional branching works in a compiled flow.
+## How branching works (the one cross-cutting rule)
 
-## Extrinsic — `models.ExtrinsicNodeType`
-
-Calls out to a NATS subject your backend (or another service) owns — this is how a flow invokes your domain logic.
-
-```go
-type ExtrinsicRule struct {
-	InfraIsolated     InfraIsolated  // optional: run this call over an isolated account instead of the default
-	Subject           string         // NATS subject to call
-	Data              map[string]any // static payload merged into the request
-	ReqTimeoutSecound uint8          // default 5
-}
-```
-
-```go
-n := nodes.NewExtrinsicSvcNode("my.internal.svc.persist.orders")
-```
-
-Pair this with `svcHandler.ImplHandlerOnSubject` on the receiving side (see [protocol.md](protocol.md)) so something actually answers on that subject. If `InfraIsolated.Account` is left empty, it defaults to the shared `inflow` account connection.
-
-## Plugin — `models.PluginNodeType`
-
-Hands execution off to an external plugin process (e.g. a Jira or Slack integration) running as its own isolated NATS participant.
-
-```go
-type PluginRule struct {
-	InfraIsolated   InfraIsolated  // account/seed/cred/url for this plugin's isolated NATS identity
-	Request         string
-	SubjectPrefix   string         // defaults to "inflow.cpu.{uniqId}"
-	CancelAfterIdle int8           // minutes; default 15
-	Body            map[string]any
-}
-```
-
-```go
-plugin, err := nodes.NewPluginNode("jira",
-	nodes.WithIdleWaitMinutes(30),
-)
-```
-
-If you don't supply `WithPluginIsolated`, `NewPluginNode` fetches (and caches) credentials for the builtin `plugins` account via `spaces.GetCredOnBuiltinPluginAcc` — this requires `inflow.InitBackend` to have already run. For finer-grained, per-instance credential scoping (so one plugin instance's client can't see another's traffic), see `spaces.PluginCredentialStrictPermission` and issue credentials with `spaces.CreateUserCredential`.
-
-## GoTo — `models.GoToNodeType`
-
-Jumps execution to a node in another (or the same) flow, then returns.
-
-```go
-type GoToRule struct {
-	From  Next // where to jump from (flow + node id)
-	EndAt Next // where control returns to afterwards
-}
-```
-
-```go
-g := nodes.NewGotoNode()
-g.From("flow-a", "node-3")
-g.To("flow-a", "node-8")
-```
+Only [Contract](nodes/contract.md) nodes decide branches. A Contract's rule returns
+a tag list (e.g. `["a"]`); the engine follows only the `Next` entries whose
+`Next.Tags` match. This is why a frontend node with multiple outputs maps to a
+Contract with one tagged handler per output — full explanation in
+[nodes/contract.md](nodes/contract.md) and
+[nodes/from-frontend.md](nodes/from-frontend.md).
 
 ## Building `Next` manually
 
-If you're constructing a `models.Flow` directly (rather than through a compiler), wire node transitions yourself:
+If you construct a `models.Flow` directly (rather than through a compiler), wire
+transitions yourself:
 
 ```go
 flow := models.Flow{
@@ -169,7 +128,19 @@ flow := models.Flow{
 flow.ValidateNext() // fills in FlowId on any Next entries that omitted it
 ```
 
+In practice most flows are authored in a visual editor and turned into this node map
+by a **compiler** (see below), not built by hand.
+
 ## Next
 
-- [compilers](compilers) — building this node map automatically from a frontend-authored graph instead of by hand
-- [protocol.md](protocol.md) — the wire-level detail of how the engine invokes extrinsic/plugin subjects
+- [nodes/from-frontend.md](nodes/from-frontend.md) — **the core doc**: how any
+  custom frontend node (any inputs/outputs, any form) compiles to a primitive
+- per-node deep dives: [void](nodes/void.md) · [code](nodes/code.md) ·
+  [contract](nodes/contract.md) · [extrinsic](nodes/extrinsic.md) ·
+  [plugin](nodes/plugin.md) · [goto](nodes/goto.md)
+- [compilers](compilers) — building this node map automatically from a
+  frontend-authored graph
+- [infra.md](infra.md) — the wire-level detail of how the engine invokes
+  extrinsic/plugin subjects
+- [architecture.md](architecture.md) — where nodes sit in the platform (Context ·
+  Workflows · Fractals · Adapters)
