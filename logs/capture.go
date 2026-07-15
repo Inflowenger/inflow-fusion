@@ -91,9 +91,11 @@ func DetailOf[T any](e ProcEvent) (T, error) {
 //
 // proc.start and proc.finish get flattened, ready-to-store bodies because they
 // are the two events a backend actually persists: they open and close a
-// process's history row. They are also the only two republished on
-// SubjectTraceProcs, so a consumer that wants nothing else can subscribe there
-// and use only what is below.
+// process's history row. Everything else in the stream describes movement
+// through the graph, which is a renderer's concern rather than a record's.
+//
+// Both arrive on the event log subject like every other kind — filter for them
+// with the captures below.
 
 // ProcStart is the opening event of a process. Exactly one per pid, always
 // Seq 0, and it is the only event that names the flow a process entered at —

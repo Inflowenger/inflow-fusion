@@ -26,12 +26,10 @@ const (
 	// engine. It is only the fallback: the subject is per-registration, so
 	// resolve it with EventLogSubject rather than subscribing to this directly.
 	DefaultSubjectEventLog = "inflow.event.log"
-	// SubjectTraceProcs carries only proc.start and proc.finish — the subject to
-	// subscribe to when all you maintain is process accounting. Unlike the event
-	// log it is fixed, and shared by every registration.
-	SubjectTraceProcs = "_infra.trace.ps"
-	// HeaderRegistration names the publishing engine registration on every
-	// message, which is how a consumer tells apart engines that share a subject.
+	// HeaderRegistration carries, on every message, the name the publishing
+	// fractal instance registered itself with on infra — the `name` of its
+	// models.RegisteredInflow. It is how a consumer tells apart instances that
+	// share a subject.
 	HeaderRegistration = "rs"
 )
 

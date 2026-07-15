@@ -19,16 +19,13 @@ The consumer **already has the flow graph** — it loaded the definition in orde
 
 ## Transport
 
-| Subject | Carries | Consumed by |
-|---|---|---|
-| The registration's event log subject | Every event in this document | Backends, `inspector-api`, anything observing execution |
-| `_infra.trace.ps` | Only `proc.start` and `proc.finish` | Infra, for process accounting |
+Every event in this document arrives on **one subject: the registration's event log**. Payload is a single JSON object, UTF-8, no framing.
 
-**The event log subject is per-registration, not fixed.** A portal may define its own in `subscribe_prefix`, and the engine publishes there; `inflow.event.log` is only the fallback for a portal that defines none. A consumer that hardcodes the fallback does not error against a portal that set a subject — it silently receives nothing. Resolve the subject from the registration. (`subscribe_prefix` is misnamed: it is the whole subject, not a prefix onto which anything is appended.)
+**That subject is per-registration, not fixed.** A portal may define its own in `subscribe_prefix`, and the engine publishes there; `inflow.event.log` is only the fallback for a portal that defines none. A consumer that hardcodes the fallback does not error against a portal that set a subject — it silently receives nothing. Resolve the subject from the registration. (`subscribe_prefix` is misnamed: it is the whole subject, not a prefix onto which anything is appended.)
 
-`_infra.trace.ps` is fixed and shared by every registration.
+Every message carries a NATS header `rs` — the resource fractal name: the name the publishing fractal instance registered itself with on infra. It is how a consumer tells apart instances that share a subject.
 
-Every message carries a NATS header `rs` identifying the publishing engine registration — which is how a consumer tells apart engines that share a subject. Payload is a single JSON object, UTF-8, no framing.
+> Infra mirrors process lifecycle events onto a private subject of its own for internal accounting. It is not part of this contract, carries no guarantee, and is not available to consumers — everything a consumer needs is on the event log subject above.
 
 The stream is **shared across every process on that engine**. It is not a per-process channel. Consumers must demultiplex — see [Consumer rules](#consumer-rules).
 
@@ -251,7 +248,7 @@ nc.Subscribe(subject, func(msg *nats.Msg) {
 })
 ```
 
-`CaptureProcStart` / `CaptureProcFinish` return flattened, ready-to-store bodies for the two events a backend persists — they open and close a process's history row, and are the only two republished on `_infra.trace.ps`. Both return `false` rather than an error for anything else on the subject: on a shared stream, "not mine" is the normal case, not a fault.
+`CaptureProcStart` / `CaptureProcFinish` return flattened, ready-to-store bodies for the two events a backend persists — they open and close a process's history row. Both return `false` rather than an error for anything else on the subject: on a shared stream, "not mine" is the normal case, not a fault.
 
 For the other kinds, `logs.Parse` gives the envelope and `logs.DetailOf[T]` decodes a body:
 
