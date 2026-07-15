@@ -33,5 +33,6 @@ Infra models accounts as NATS accounts, not just database rows. Three built-in a
 ## Next
 
 - [infra.md](infra.md) — exact REST endpoints, NATS subjects, and payload shapes
+- [logs.md](logs.md) — the process event stream engines publish while executing a flow
 - [nodes.md](nodes.md) — what each node type does and how to build one
 - [compilers](compilers) — turning a frontend-authored graph into the node map the engine consumes
