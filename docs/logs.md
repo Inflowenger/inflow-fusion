@@ -4,7 +4,7 @@ The engine emits a **process event stream**: one message per meaningful thing th
 
 This document is the contract between whoever **publishes** these events (the engine) and whoever **consumes** them (a backend, `inspector-api`, the inspector UI, a parser library). It deliberately describes only the wire format — not how the engine is built internally. For other subjects and endpoints see [infra.md](infra.md); for node semantics see [nodes.md](nodes.md).
 
-> **Schema version 1.** Everything below describes `v: 1`. A pre-v1 format exists in the wild; see [Legacy format](#legacy-format-pre-v1) at the end.
+> **Schema version 1.** Everything below describes `v: 1`, which is the only format there is. A message that does not carry `v: 1` is not an event under this contract — consumers reject it rather than interpret it.
 
 ## Why this stream is shaped the way it is
 
@@ -21,10 +21,14 @@ The consumer **already has the flow graph** — it loaded the definition in orde
 
 | Subject | Carries | Consumed by |
 |---|---|---|
-| `inflow.event.log` | Every event in this document | Backends, `inspector-api`, anything observing execution |
+| The registration's event log subject | Every event in this document | Backends, `inspector-api`, anything observing execution |
 | `_infra.trace.ps` | Only `proc.start` and `proc.finish` | Infra, for process accounting |
 
-Every message carries a NATS header `rs` identifying the publishing engine registration. Payload is a single JSON object, UTF-8, no framing.
+**The event log subject is per-registration, not fixed.** A portal may define its own in `subscribe_prefix`, and the engine publishes there; `inflow.event.log` is only the fallback for a portal that defines none. A consumer that hardcodes the fallback does not error against a portal that set a subject — it silently receives nothing. Resolve the subject from the registration. (`subscribe_prefix` is misnamed: it is the whole subject, not a prefix onto which anything is appended.)
+
+`_infra.trace.ps` is fixed and shared by every registration.
+
+Every message carries a NATS header `rs` identifying the publishing engine registration — which is how a consumer tells apart engines that share a subject. Payload is a single JSON object, UTF-8, no framing.
 
 The stream is **shared across every process on that engine**. It is not a per-process channel. Consumers must demultiplex — see [Consumer rules](#consumer-rules).
 
@@ -223,25 +227,41 @@ The stream is broadcast to every observer of an engine. Node definitions contain
 
 Producer rule 4 (never include the node definition) exists primarily for this reason. Size and redundancy are the secondary benefit.
 
-Consumers of `inflow.event.log` must additionally scope what they forward: a consumer that relays events onward (a websocket fan-out, for instance) is responsible for filtering to the pids its client is entitled to see. Relaying the raw stream to every connected client gives each of them every other tenant's execution history.
+Consumers of the event log must additionally scope what they forward: a consumer that relays events onward (a websocket fan-out, for instance) is responsible for filtering to the pids its client is entitled to see. Relaying the raw stream to every connected client gives each of them every other tenant's execution history.
 
-## Legacy format (pre-v1)
+## Reference consumers
 
-The earlier format is recognisable by the **absence of a `v` field**. It differs in ways that matter:
+Two libraries implement this document. Neither is required, but a consumer that hand-rolls the shapes tends to rediscover the rules above the hard way.
 
-| Legacy | v1 |
-|---|---|
-| No `v` | `v: 1` |
-| No flow id on the node | `flow` required |
-| No `seq`; `ts` only | `seq` is the ordering key |
-| `info` is `map[string]string`; structures are Go-formatted into strings | `detail` is typed JSON |
-| Full node definition on every event, including plugin credentials | Definition never transmitted |
-| `type` conflates severity and event kind | `kind` and `level` are orthogonal |
-| Routing emitted only for branching nodes | `edge.select` for every node with outgoing edges |
-| Normal completion reported as an error after finish | `proc.finish` with `status: "completed"`, terminal |
+### Go — `inflow-fusion/logs`
 
-The two formats are distinguishable per-message, so a consumer can accept both during migration by branching on `v`. New consumers should require `v: 1`.
+For a **backend keeping process history**. Tokens, wire types, and capture helpers; no transport, because which pid a caller may see is its policy, not the package's.
 
-## Reference consumer
+```go
+import "github.com/Inflowenger/inflow-fusion/logs"
 
-`@inflowenger/flow-trace` (in the `inflow-vue/inflow-inspector` workspace) implements every consumer rule above and is the easiest way to satisfy this contract from JavaScript: it demultiplexes by pid, reorders by seq, keys state on `flow:node`, handles loops, and turns the stream into `move` / `finish` events. Its test suite runs against a captured engine run, so it doubles as an executable check that a producer still honours this document.
+// The subject is per-registration — see Transport.
+subject := logs.EventLogSubjectOf(registration)
+
+nc.Subscribe(subject, func(msg *nats.Msg) {
+    if f, ok := logs.CaptureProcFinish(msg.Data); ok {
+        // f.Pid has ended: f.Status, f.DurationMs, f.Error.
+        // Nothing follows proc.finish, so this row will not be contradicted.
+    }
+})
+```
+
+`CaptureProcStart` / `CaptureProcFinish` return flattened, ready-to-store bodies for the two events a backend persists — they open and close a process's history row, and are the only two republished on `_infra.trace.ps`. Both return `false` rather than an error for anything else on the subject: on a shared stream, "not mine" is the normal case, not a fault.
+
+For the other kinds, `logs.Parse` gives the envelope and `logs.DetailOf[T]` decodes a body:
+
+```go
+ev, err := logs.Parse(msg.Data)          // rejects non-events; Detail stays lazy
+d, err := logs.DetailOf[logs.EdgeSelectDetail](ev)
+```
+
+Note `proc.finish` carries **no flow id** — the contract does not repeat one there. A backend that needs it takes it from this pid's `proc.start`, or already knows it because it started the process itself.
+
+### JavaScript — `@inflowenger/flow-trace`
+
+For **rendering movement**. In the `inflow-vue/inflow-inspector` workspace. It implements every consumer rule above: demultiplexes by pid, reorders by seq, keys state on `flow:node`, handles loops, and turns the stream into `move` / `finish` events. Its test suite runs against a captured engine run, so it doubles as an executable check that a producer still honours this document.
