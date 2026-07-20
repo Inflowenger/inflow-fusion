@@ -45,3 +45,15 @@ func GetSvc(name string)SvcTopic{
 func GetAllSvcs()map[string]SvcTopic{
 	return GetExtrinsicSvcs().getAll()
 }
+
+// AllSvcSubjects returns the registered extrinsic services as a
+// topicKey -> subject-template map with plain string values. This is what an
+// extrinsic extension binds to (the compiler's extension branch and the
+// inspector's BindTo picker).
+func AllSvcSubjects() map[string]string {
+	out := map[string]string{}
+	for key, topic := range GetAllSvcs() {
+		out[key] = string(topic)
+	}
+	return out
+}
