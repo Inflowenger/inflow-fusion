@@ -15,6 +15,9 @@ type NodeType string
 type EvidenceType string
 type CodeVariant string
 
+type SvcReturnCommand string
+type SvcReturnKey string
+
 const (
 	VoidNodeType      NodeType = "voidNodeType"
 	CodeNodeType      NodeType = "codeNodeType"
@@ -30,4 +33,15 @@ const (
 const (
 	INFLOW_PLUGIN_PROTO_PREFIX = "inflow.cpu"
 	INFLOW_PLUGIN_V1_PREFIX = "inflow.v1"
+)
+
+
+
+const (
+	CmdStop SvcReturnCommand= "stop"
+	CmdNextFilter SvcReturnCommand = "next_tags"
+)
+const (
+	SvcCmdResposeKey            SvcReturnKey = "_cmd"
+	SvcCmdResponseNextFilterKey SvcReturnKey = "_next_filter"
 )

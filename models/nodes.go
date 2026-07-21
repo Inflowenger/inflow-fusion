@@ -40,3 +40,9 @@ type ExtrinsicRule struct {
 
 type VoidRule struct {
 }
+
+type ExtSvcRequestBody struct {
+	Data          any            `json:"data"`
+	OperationData map[string]any `json:"op"`
+	Node          *Node          `json:"node"`
+}

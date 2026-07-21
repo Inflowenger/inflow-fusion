@@ -47,3 +47,9 @@ func WithIsolated(isolated models.InfraIsolated) func(*ExtrinsicSvcNode) {
 		esn.InfraIsolated = isolated
 	}
 }
+
+func WithOpData(op map[string]any)func(*ExtrinsicSvcNode) {
+		return func(esn *ExtrinsicSvcNode) {
+		esn.Data = op
+	}
+}
