@@ -104,8 +104,11 @@ func GetNatsByInfraIsolate(infraIsolate models.InfraIsolated) (*Nats, error) {
 	if ok {
 		return nat, nil
 	}
-
-	nat, err := New(models.Cred{Base64Cred: infraIsolate.Cred, ServerUrl: infraIsolate.Url, Raw: infraIsolate.Cred})
+	credBytes, err := base64.StdEncoding.DecodeString(infraIsolate.Cred)
+	if err != nil {
+		return nil, err
+	}
+	nat, err = New(models.Cred{Base64Cred: infraIsolate.Cred, ServerUrl: infraIsolate.Url, Raw: string(credBytes)})
 	if err != nil {
 		return nil, errors.New("make nats connection get failed")
 	}
