@@ -32,6 +32,9 @@ func v1SettingsSubject(pluginID string) string {
 func v1ActionsSubject(pluginID string) string {
 	return fmt.Sprintf("%s.%s.@actions", models.INFLOW_PLUGIN_V1_PREFIX, pluginID)
 }
+func v1MetaFnSubject(pluginID ,fn string) string {
+	return fmt.Sprintf("%s.%s.%s", models.INFLOW_PLUGIN_V1_PREFIX, pluginID,fn)
+}
 func v1ActionFormSubject(pluginID, method string) string {
 	return fmt.Sprintf("%s.%s.%s.@form", models.INFLOW_PLUGIN_V1_PREFIX, pluginID, method)
 }
@@ -83,6 +86,11 @@ func FetchPluginActions(infra models.InfraIsolated, pluginID string) ([]byte, er
 	return RequestPluginV1(infra, v1ActionsSubject(pluginID))
 }
 
+
+// FetchPluginMetaFunc returns `inflow.v1.<pluginID>.<Fn>` , return response in req/res nats pattern
+func FetchPluginMetaFunc(infra models.InfraIsolated, pluginID ,fn string) ([]byte, error) {
+	return RequestPluginV1(infra, v1MetaFnSubject(pluginID,fn))
+}
 // FetchActionForm returns `inflow.v1.<pluginID>.<method>.@form` — the JSON-schema
 // form for one action, rendered when that action is added on the canvas.
 func FetchActionForm(infra models.InfraIsolated, pluginID, method string) ([]byte, error) {
@@ -132,6 +140,14 @@ func DefaultPluginActions(pluginID string) ([]byte, error) {
 	return FetchPluginActions(*infra, pluginID)
 }
 
+// DefaultPluginActions is FetchPluginActions against the builtin-plugins account.
+func DefaultPluginMetaFunc(pluginID ,fn string) ([]byte, error) {
+	infra, err := defaultPluginInfra()
+	if err != nil {
+		return nil, err
+	}
+	return FetchPluginActions(*infra, pluginID)
+}
 // DefaultPluginActionForm is FetchActionForm against the builtin-plugins account.
 func DefaultPluginActionForm(pluginID, method string) ([]byte, error) {
 	infra, err := defaultPluginInfra()
