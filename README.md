@@ -177,6 +177,7 @@ A fully runnable version of this (with an in-memory example flow) lives in [back
 
 - [docs/architecture.md](docs/architecture.md) — how infra, your backend, engine instances, and plugins fit together
 - [docs/infra.md](docs/infra.md) — the concrete REST endpoints and NATS subjects/wire formats
+- [docs/plugin-svc-calls.md](docs/plugin-svc-calls.md) — serving `request/svc.<ACTION>` calls that plugins make back into your backend (subscribe on the plugin space, grant policy)
 - [docs/logs.md](docs/logs.md) — the process event stream: the wire contract for observing flow movement and completion
 - [docs/nodes.md](docs/nodes.md) — the nodes knowledge base: every node type, its rule fields, and its builder API (hub, with per-node deep dives under [docs/nodes/](docs/nodes))
 - [docs/nodes/from-frontend.md](docs/nodes/from-frontend.md) — how any custom frontend node (any inputs/outputs, any config form) reduces to a primitive node — the core "primitives are enough" doc

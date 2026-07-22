@@ -100,6 +100,8 @@ The compiler hook reads the fields above and builds `nodes.NewPluginNode(request
 
 ## Next
 
+- [../plugin-svc-calls.md](../plugin-svc-calls.md) — serving the
+  `request/svc.<ACTION>` calls a running plugin job makes back into your backend
 - [extrinsic.md](extrinsic.md) — the thin internal-call counterpart; see the
   comparison table there
 - [../architecture.md](../architecture.md) — Context · Workflows · Fractals ·

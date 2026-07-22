@@ -98,3 +98,7 @@ svcHandler.ImplHandlerOnSubject("db_handler", svcHandler.SvcTopic("my.internal.s
 ```
 
 Handlers registered this way are also tracked in a process-local registry (`svcHandler.GetSvc` / `GetAllSvcs`), keyed by the `name` argument — useful if a compiler needs to resolve a logical service name back to its subject pattern (see [compilers/vueflow.md](compilers/vueflow.md)).
+
+## NATS: plugin-originated service calls
+
+Plugins (inflow-plugin-sdk) can call your backend mid-job via `job.CmdSvcCall(action, data, op)`. These requests do **not** arrive on the infra connection above — the engine forwards them on the **plugin space** (builtin-plugins account), addressed to the bare action subject (`add.db.record`, `log`, …), origin-tagged `plugin:<node title>`, with a `models.ExtSvcRequestBody` body. Subscribe there via `spaces.GetCredOnBuiltinPluginAcc` + `natsHandler.GetNatsByInfraIsolate` — full wire contract and handler recipe in [plugin-svc-calls.md](plugin-svc-calls.md).
