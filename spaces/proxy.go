@@ -63,6 +63,25 @@ func RequestPluginV1(infra models.InfraIsolated, subject string) ([]byte, error)
 	return msg.Data, nil
 }
 
+// RequestPluginV1WithBody is RequestPluginV1 but forwards a request body. The
+// reserved @-descriptor reads (intro/settings/actions/form) carry no body, but
+// metaFunc *calls* need their params sent in.
+func RequestPluginV1WithBody(infra models.InfraIsolated, subject string, body []byte) ([]byte, error) {
+	nat, err := natsHandler.GetNatsByInfraIsolate(infra)
+	if err != nil {
+		return nil, fmt.Errorf("plugin connection failed: %w", err)
+	}
+	conn := nat.GetConnection()
+	if conn == nil {
+		return nil, fmt.Errorf("plugin connection not available")
+	}
+	msg, err := conn.Request(subject, body, v1RequestTimeout)
+	if err != nil {
+		return nil, fmt.Errorf("inflowv1 request %q: %w", subject, err)
+	}
+	return msg.Data, nil
+}
+
 // --- Generic fetches (explicit isolated-infra target) ----------------------
 //
 // Callers that already hold the account's InfraIsolated (e.g. a plugin living on a
@@ -87,9 +106,10 @@ func FetchPluginActions(infra models.InfraIsolated, pluginID string) ([]byte, er
 }
 
 
-// FetchPluginMetaFunc returns `inflow.v1.<pluginID>.<Fn>` , return response in req/res nats pattern
-func FetchPluginMetaFunc(infra models.InfraIsolated, pluginID ,fn string) ([]byte, error) {
-	return RequestPluginV1(infra, v1MetaFnSubject(pluginID,fn))
+// FetchPluginMetaFunc calls `inflow.v1.<pluginID>.<fn>` with the given request
+// body and returns the plugin's response (req/res NATS pattern).
+func FetchPluginMetaFunc(infra models.InfraIsolated, pluginID, fn string, body []byte) ([]byte, error) {
+	return RequestPluginV1WithBody(infra, v1MetaFnSubject(pluginID, fn), body)
 }
 // FetchActionForm returns `inflow.v1.<pluginID>.<method>.@form` — the JSON-schema
 // form for one action, rendered when that action is added on the canvas.
@@ -140,13 +160,14 @@ func DefaultPluginActions(pluginID string) ([]byte, error) {
 	return FetchPluginActions(*infra, pluginID)
 }
 
-// DefaultPluginActions is FetchPluginActions against the builtin-plugins account.
-func DefaultPluginMetaFunc(pluginID ,fn string) ([]byte, error) {
+// DefaultPluginMetaFunc calls `inflow.v1.<pluginID>.<fn>` (with the given body)
+// against the builtin-plugins account.
+func DefaultPluginMetaFunc(pluginID, fn string, body []byte) ([]byte, error) {
 	infra, err := defaultPluginInfra()
 	if err != nil {
 		return nil, err
 	}
-	return FetchPluginActions(*infra, pluginID)
+	return FetchPluginMetaFunc(*infra, pluginID, fn, body)
 }
 // DefaultPluginActionForm is FetchActionForm against the builtin-plugins account.
 func DefaultPluginActionForm(pluginID, method string) ([]byte, error) {

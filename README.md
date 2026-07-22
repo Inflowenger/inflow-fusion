@@ -49,6 +49,26 @@ Your backend never executes a flow itself — it answers questions (what's this 
 
 `github.com/Inflowenger/dev-backend` is a real consumer of this SDK: it implements `IInflowService` on top of its own DB (`dev-backend/inflow/wire.go`), and defines its own Vue Flow node→`inflow-fusion` node mapping (`dev-backend/inflow/compiler.go`).
 
+## Rule: never open NATS yourself — go through the SDK
+
+A consuming backend must **never dial NATS directly** (`nats.Connect`, a hand-built `*nats.Conn`, or hand-assembled `inflow.v1.*` / infra subjects). Every NATS connection — and above all every call that reaches a **plugin** — must go through `inflow-fusion`.
+
+The SDK owns a single pooled, credentialed connection per account/space (natsBox), mints the right scoped credentials, builds the correct subjects, and handles isolation, timeouts, and reconnection. Bypassing it means duplicated credential logic, leaked or unpooled connections, and plugins reached on the wrong account.
+
+**Use these entry points instead of raw NATS:**
+
+| You want to… | Use | Package |
+|---|---|---|
+| Call a plugin on the builtin-plugins account (id only) | `DefaultPluginIntro` / `DefaultPluginSettings` / `DefaultPluginActions` / `DefaultPluginMetaFunc` / `DefaultPluginActionForm` | [`spaces`](spaces) |
+| Call a plugin on a specific space (you hold its `InfraIsolated`) | `FetchPlugin*` / `RequestPluginV1` | [`spaces`](spaces) |
+| Resolve a plugin account / mint a scoped plugin credential | `GetPluginBuiltinAccount`, `GetAccountById`, `GetCredOnBuiltinPluginAcc`, `GetAccountCred` | [`spaces`](spaces) |
+| Get an account-scoped, pooled connection from an `InfraIsolated` | `GetNatsByInfraIsolate(infra).GetConnection()` | [`nats`](nats) |
+| Get the infra (control-plane) connection | `GetInfraNats` | [`nats`](nats) |
+
+`GetNatsByInfraIsolate` is the single choke point: the plugin fetchers above all funnel through it, so the pooled natsBox connection is the only thing that ever actually talks to a NATS server.
+
+The **only** NATS a backend touches directly is the callback surface the SDK hands you: `IInflowService` methods (`RetrieveFlow`/`RetrieveContext`/`UpdateContext`) receive a `*nats.Msg`, `svcHandler` handlers receive `nats.Header`, and the process event log is read via the backend's own events pipe. Those are SDK-provided; using the `nats.go` types there is expected. Opening a connection is not.
+
 ## Installation
 
 ```bash
