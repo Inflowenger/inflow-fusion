@@ -114,7 +114,7 @@ func PluginCredentialStrictPermission(userName, pluginUniqId, accountPub string)
 	}
 	return perm
 }
-func PluginCredentialOpenPermission(userName, pluginUniqId, accountPub string) models.UserCredGenInput {
+func PluginCredentialOpenPermission(userName, accountPub string) models.UserCredGenInput {
 	perm := models.UserCredGenInput{
 		Name:    userName,
 		Account: accountPub,
