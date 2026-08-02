@@ -85,6 +85,14 @@ rule returns a list of tags, and the engine follows only the `Next` entries whos
 `Tags` match. That's the entire branching mechanism — "3 outputs: success / retry /
 reject" is just three tagged handlers on one Contract node.
 
+Tags live on `Next`, not on the node type, so the compiler carries **any** edge's
+`Data.Tags` through regardless of which primitive it left. That is what lets an
+[Extrinsic](extrinsic.md) reply or a running [Plugin](plugin.md) job answer with
+tags and pick the branch itself — the route an LLM node takes from its bound
+functions is this exact mechanism. Contract is the compiled, in-engine decider and
+the default answer for "a node with N outputs"; the other two move the decision
+outside. See [../routing.md](../routing.md).
+
 ```
  designer's mental model            primitive reality
  ───────────────────────            ─────────────────────────────────
@@ -167,8 +175,10 @@ ones, Contract for the gate). **Nothing new in the engine is ever required.**
 ## Why this is enough (the design argument)
 
 - **Computation** — Code (JS/OPA) covers arbitrary transformation of context.
-- **Decision / control flow** — Contract covers all branching; GoTo covers
-  composition and reuse across flows; Void covers structure.
+- **Decision / control flow** — tagged transitions cover all branching, decided by
+  a Contract rule in-engine or by an extrinsic/plugin answer from outside
+  ([../routing.md](../routing.md)); GoTo covers composition and reuse across flows;
+  Void covers structure.
 - **Reaching your own system** — Extrinsic covers any internal service via one
   req/reply subject.
 - **Reaching the outside world / long-running / stateful / event-driven** — Plugin,

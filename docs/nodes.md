@@ -105,11 +105,22 @@ g := nodes.NewGotoNode(); g.From("flow-a", "node-3"); g.To("flow-a", "node-8")
 
 ## How branching works (the one cross-cutting rule)
 
-Only [Contract](nodes/contract.md) nodes decide branches. A Contract's rule returns
-a tag list (e.g. `["a"]`); the engine follows only the `Next` entries whose
-`Next.Tags` match. This is why a frontend node with multiple outputs maps to a
-Contract with one tagged handler per output — full explanation in
-[nodes/contract.md](nodes/contract.md) and
+Branching is a property of `Next`, not of a node type. A node emits a **tag list**
+(e.g. `["a"]`) when it finishes; the engine deactivates every outgoing transition
+and follows only the ones whose `Next.Tags` match. This is why a frontend node with
+multiple outputs maps to one tagged `Next` entry per output.
+
+Three primitives can emit those tags, with identical semantics:
+
+| Decider | Source of the tags |
+|---|---|
+| [Contract](nodes/contract.md) | its JS/OPA rule's result *is* the tag list |
+| [Extrinsic](nodes/extrinsic.md) | the service reply carries `_cmd: "next_tags"` + `_next_filter` (`svcHandler.FilterNextResponse`) |
+| [Plugin](nodes/plugin.md) | the running job sends the `next_tags` command (`sdkv1` `job.CmdNextFilter`) |
+
+Contract is the common case — a compiled, deterministic rule — but a plugin that
+routes itself is how a model node chooses among the ports you drew. Full mechanism,
+semantics and rationale in **[routing.md](routing.md)**; the canvas side in
 [nodes/from-frontend.md](nodes/from-frontend.md).
 
 ## Building `Next` manually
@@ -135,6 +146,8 @@ by a **compiler** (see below), not built by hand.
 
 - [nodes/from-frontend.md](nodes/from-frontend.md) — **the core doc**: how any
   custom frontend node (any inputs/outputs, any form) compiles to a primitive
+- [routing.md](routing.md) — tag routing end to end: the three deciders, exact
+  filter semantics, and why operator nodes are authored rather than implemented
 - per-node deep dives: [void](nodes/void.md) · [code](nodes/code.md) ·
   [contract](nodes/contract.md) · [extrinsic](nodes/extrinsic.md) ·
   [plugin](nodes/plugin.md) · [goto](nodes/goto.md)

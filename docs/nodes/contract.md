@@ -48,6 +48,41 @@ tagged `Next` entries. `Conditions` is the static criteria data the rule reads
 (exposed as `data.*`), which is how the same rule logic can be parameterized per
 node.
 
+> **Contract is not the only decider.** Tags-on-`Next` is a runtime mechanism, not
+> a Contract feature: an [Extrinsic](extrinsic.md) service can answer with
+> `svcHandler.FilterNextResponse(data, tags)`, and a running [Plugin](plugin.md)
+> job can send `next_tags` (`sdkv1` `job.CmdNextFilter`) — which is how a model
+> node routes to the port whose function it chose. Identical filter semantics in
+> all three cases; see [../routing.md](../routing.md). What is special about
+> Contract is that its decision is a *compiled, deterministic rule* evaluated
+> in-engine, with nothing external involved.
+
+## The base class for operator nodes
+
+This is why the primitive set does not grow. Every process designer eventually
+wants a drawer of comparison nodes — greater than, less than, contains, is empty,
+matches, between — and none of them exist in the runtime. Each is a Contract whose
+rule the compiler hook builds from the node's form fields:
+
+```go
+// one case per palette node; the engine learns nothing new
+case "op_gte":
+	n := inflowNodes.NewJsRuleLogicNode(
+		inflowNodes.WithContractLogicCode(`input[data.field] >= data.value ? ["true"] : ["false"]`),
+		inflowNodes.WithContractConditions(map[string]any{
+			"field": data["field"], "value": data["value"],
+		}),
+	)
+	node.Type = inflowModels.RuleNodeType
+	node.Contract = &n.ContractRule
+```
+
+On the canvas that is a node with two inputs and a `true` / `false` handler pair —
+no code editor, no mention of JavaScript. The rule is authored at **compile time**
+by whoever builds the product; the end user only sees the node. Fifty operators
+later the runtime is unchanged, which is the concrete form of the primitives claim
+in [from-frontend.md](from-frontend.md).
+
 ## Frontend representation (inspector) — handlers = tagged outputs
 
 This is the most instructive node to see on the canvas (`ContractNode.vue` +
@@ -100,6 +135,8 @@ with its own tags. See [../compilers/vueflow.md](../compilers/vueflow.md).
 
 ## Next
 
+- [../routing.md](../routing.md) — the routing mechanism end to end: all three
+  deciders, exact filter semantics, `edge.select` reasons
 - [code.md](code.md) — same languages, output is a value not tags
 - [void.md](void.md) — common "else"/join target for a branch
 - [from-frontend.md](from-frontend.md) · [../nodes.md](../nodes.md)

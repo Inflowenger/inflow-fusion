@@ -51,7 +51,7 @@ Starting from `startNodeId`, it walks the graph depth-first following outgoing e
 3. Recurse into each `Next.NodeId` not already visited.
 4. Return the accumulated `map[nodeId]*models.Node`, plus any per-node errors your hook returned (compilation stops walking further from a node once its hook errors).
 
-This is why a conditional/branching frontend node (multiple output handles: `success`, `error`, `else`, ...) doesn't need special handling in the compiler itself — each handle is just an edge with its own `SourceHandle`/tags, and it's the **Contract** node's own rule logic (see [nodes.md](../nodes.md#contract--modelsrulenodetype)) that decides which tagged `Next` entries actually fire at runtime.
+This is why a conditional/branching frontend node (multiple output handles: `success`, `error`, `else`, ...) doesn't need special handling in the compiler itself — each handle is just an edge with its own `SourceHandle`/tags, and which tagged `Next` entries actually fire is decided at runtime. Note `Data.Tags` is carried through for **every** edge, whatever primitive it leaves, so the same wiring serves a **Contract** rule, an extrinsic reply that answers with tags, or a plugin job that routes itself — see [routing.md](../routing.md).
 
 For the deeper mechanics of how a specific handle id ends up meaning something at runtime (and a worked traversal example), see [`compilers/vueFlow/vuewFlow.md`](../../compilers/vueFlow/vuewFlow.md) — that file predates some of the field names above, so treat `models/flow.go` as the source of truth for the current `Node`/`Next` shape.
 

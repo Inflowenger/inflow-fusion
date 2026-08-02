@@ -51,8 +51,8 @@ process, so it can:
 - **be an adapter** — translate any external protocol into Inflowenger context;
 - **carry its own UI** — every action ships a JSON-Schema/UI-Schema form (rendered
   by JSON Forms with `x-inflow-ui` renderers) so users configure the node visually;
-- **read and write flow context mid-execution**, report progress, and even **stop
-  the flow** from inside its handler.
+- **read and write flow context mid-execution**, report progress, **route the
+  flow** (below), and even **stop the flow** from inside its handler.
 
 Because of this, a single plugin node is enough to build an entire workflow-
 automation system on top of Inflowenger — it is the platform's open-ended extension
@@ -74,6 +74,32 @@ The runtime talks to a plugin in two ways, and the subject tells you which:
 
 The `SubjectPrefix` field above (default `inflow.cpu.{uniqId}`) is the execution-plane
 prefix for this node instance.
+
+## A plugin can route the flow (`next_tags`)
+
+Among the job commands is one that decides where execution goes next. The plugin
+sends the tags to keep; the engine deactivates every outgoing edge of the node and
+re-activates only those tagged with one of them — exactly what a
+[Contract](contract.md) rule does, decided by an external process instead:
+
+```go
+p.AddAction(sdkv1.Action{Method: "classify", RequestHandler: func(job sdkv1.Job) {
+	job.CmdNextFilter([]string{"escalate"})   // subject <job>/next_tags, payload "escalate"
+	job.Done(map[string]any{"reason": "amount over limit"})
+}})
+```
+
+This is what lets a **model node route the diagram**. An LLM plugin exposes the
+node's bound functions/tools as tagged outputs; when the model answers with a tool
+call, the plugin turns that choice into `CmdNextFilter([...])` and only that port
+fires. The model selects among ports the designer drew — it cannot invent one, and
+everything downstream of each port is already defined. Same for an MCP node, or any
+plugin that picks its own continuation.
+
+The tags that did the selecting are recorded and surface in the run's
+`edge.select` event ([../logs.md](../logs.md)). Full mechanism and semantics:
+[../routing.md](../routing.md); the wire form is `next_tags` in the SDK's
+`docs/protocol-inflowv1.md` and `docs/jobs-and-commands.md`.
 
 ## Frontend representation (inspector)
 
@@ -100,6 +126,7 @@ The compiler hook reads the fields above and builds `nodes.NewPluginNode(request
 
 ## Next
 
+- [../routing.md](../routing.md) — tag routing across all three deciders
 - [../plugin-svc-calls.md](../plugin-svc-calls.md) — serving the
   `request/svc.<ACTION>` calls a running plugin job makes back into your backend
 - [extrinsic.md](extrinsic.md) — the thin internal-call counterpart; see the

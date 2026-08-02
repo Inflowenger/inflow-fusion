@@ -68,6 +68,43 @@ svcHandler.ImplHandlerOnSubject("db_handler", svcHandler.SvcTopic("my.internal.s
    logical service name back to its subject pattern and fill placeholders with
    `SvcTopic.MakeReqSubjectWithParams(args)`.
 
+## Control commands in the reply — an extrinsic can route
+
+A reply is normally just the node's output, but it can also carry a **command**
+that rewrites the node's outgoing edges before the flow moves on. `svcHandler`
+ships the two helpers that build one:
+
+```go
+svcHandler.ImplHandlerOnSubject("risk", svcHandler.SvcTopic("svc.risk.check"),
+	func(header nats.Header, data []byte) ([]byte, error) {
+		if overLimit(data) {
+			// keep only edges tagged "escalate"; {"score": 91} is still the output
+			return svcHandler.FilterNextResponse(map[string]any{"score": 91}, []string{"escalate"})
+		}
+		return svcHandler.FilterNextResponse(map[string]any{"score": 12}, []string{"approve"})
+	})
+```
+
+| Helper | Wire form | Effect on `Next` |
+|---|---|---|
+| `FilterNextResponse(data, tags)` | `{…, "_cmd":"next_tags", "_next_filter":["escalate"]}` | deactivate all, re-activate only edges carrying one of those tags |
+| `StopHereResponse(data)` | `{…, "_cmd":"stop"}` | deactivate **every** edge — the branch ends here |
+| plain bytes | no `_cmd` | nothing changes; edges are followed as compiled |
+
+The keys are `models.SvcCmdResposeKey` (`_cmd`) and
+`models.SvcCmdResponseNextFilterKey` (`_next_filter`); commands are
+`models.CmdNextFilter` and `models.CmdStop`. Either way the rest of the reply is
+still written into context at the node's `Key`, and a missing or malformed `_cmd`
+is deliberately a no-op.
+
+So an extrinsic node is only linear by convention. Give it several **tagged**
+`Next` entries and your own backend decides the branch — the same mechanism a
+[Contract](contract.md) uses, with the decision living in your service instead of
+in a compiled rule. Note the inspector renders a single output handle for this
+type, so authoring tagged outputs on an extrinsic node needs a palette that draws
+them (the compiler already carries any edge's `Data.Tags` through). See
+[../routing.md](../routing.md).
+
 ## Reference example: inspector-api
 
 `inflow-inspector-api` is itself an instance built on this platform (via

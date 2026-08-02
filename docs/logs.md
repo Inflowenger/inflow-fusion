@@ -154,7 +154,7 @@ The routing decision, emitted after `node.enter` and before `node.exit`.
 }
 ```
 
-**Every node with outgoing edges emits `edge.select` — not only branching nodes.** A [Code](nodes/code.md) node with two unconditional outputs emits one with both edges in `taken` and `pruned: []`. A [Contract](nodes/contract.md) node emits one with `reason.tags` set to the tags its rule returned.
+**Every node with outgoing edges emits `edge.select` — not only branching nodes.** A [Code](nodes/code.md) node with two unconditional outputs emits one with both edges in `taken` and `pruned: []`. A node that routed emits one with `reason.tags` set to the tags that did the selecting — a [Contract](nodes/contract.md)'s rule result, or the tags an [Extrinsic](nodes/extrinsic.md) reply or a [Plugin](nodes/plugin.md) job asked to keep (see [routing.md](routing.md)).
 
 **This includes the process's entry node**, which is a special case worth stating: the entry node does not execute as a task, but it still emits the edges out of itself, immediately after `proc.start`. Without it the first nodes of a flow would report entering with nothing explaining how control reached them, and the traversal graph would start disconnected.
 
