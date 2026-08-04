@@ -1,21 +1,22 @@
 package models
+
 const (
 	INFLOW_REST_PORT = "9001"
 )
 
-type ProcessResponse struct{
-	Data struct{
+type ProcessResponse struct {
+	Data struct {
 		PID string `json:"pid"`
 	} `json:"data"`
 	Error any `json:"error"`
 }
 type ProcessRequest struct {
-	Context  ContextTopicsPattern `json:"context"`
-	Flow     FlowEngine           `json:"flow"`
-	PID      string               `json:"pid"`
-	StartNodeId               string `json:"startNodeId"`
-	Settings Settings             `json:"settings"`
-	Meta     map[string]string    `json:"meta"`
+	Context      ContextTopicsPattern `json:"context"`
+	Flow         FlowEngine           `json:"flow"`
+	StartNodeIds []string             `json:"startNodeIds" validate:"required,min=1,dive,inflow_required,max=128"`
+	PID          string               `json:"pid"`
+	Settings     Settings             `json:"settings"`
+	Meta         map[string]string    `json:"meta"`
 }
 
 type Settings struct {
@@ -24,19 +25,16 @@ type Settings struct {
 	ProcessNodeLimit uint16 `json:"proc_node_limit"`
 }
 
-
 type ContextTopicsPattern struct {
-	Getter       string `json:"get"`    //eg. inflow.{spaceId}.context.get.{contextId}
-	Setter       string `json:"update"` //eg. inflow.{spaceId}.context.set.{contextId}
-	ContextId    string `json:"contextId"`
+	Getter    string `json:"get"`    //eg. inflow.{spaceId}.context.get.{contextId}
+	Setter    string `json:"update"` //eg. inflow.{spaceId}.context.set.{contextId}
+	ContextId string `json:"contextId"`
 }
 
 type FlowEngine struct {
-	GetFlow    string `json:"get_flow"` //eg. inflow.{spaceId}.get.flow.{flowId}
-	FlowId     string `json:"flowId"`
-
+	GetFlow string `json:"get_flow"` //eg. inflow.{spaceId}.get.flow.{flowId}
+	FlowId  string `json:"flowId"`
 }
-
 
 type ContextDoc struct {
 	Data   string         `json:"data"`

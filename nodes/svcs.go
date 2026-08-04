@@ -50,6 +50,6 @@ func WithIsolated(isolated models.InfraIsolated) func(*ExtrinsicSvcNode) {
 
 func WithOpData(op map[string]any)func(*ExtrinsicSvcNode) {
 		return func(esn *ExtrinsicSvcNode) {
-		esn.Data = op
+		esn.OperationData = op
 	}
 }

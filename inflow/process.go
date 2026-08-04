@@ -22,11 +22,11 @@ func StopProcess(ctx context.Context, pid ,resourceUrl string) (*models.ProcessR
 	p:=&Process{req: models.ProcessRequest{PID: pid}, resourceUrl: resourceUrl}
 	return p.Stop(ctx)
 }
-func NewProcess(startNodeId string, opts ...func(*Process)) (*Process, error) {
+func NewProcess(startNodeIds []string, opts ...func(*Process)) (*Process, error) {
 
 	p := &Process{
 		resourceUrl: "",
-		req: models.ProcessRequest{StartNodeId: startNodeId,
+		req: models.ProcessRequest{StartNodeIds: startNodeIds,
 			Settings: models.Settings{
 				RequestTimeOut:   5,
 				ProcessNodeLimit: 500,
@@ -62,7 +62,7 @@ func NewProcess(startNodeId string, opts ...func(*Process)) (*Process, error) {
 		p.resourceUrl = fmt.Sprintf("http://%s", p.resourceUrl)
 
 	}
-	if p.req.StartNodeId == "" {
+	if len(p.req.StartNodeIds)==0 {
 		return nil, errors.New("startNodeId is required")
 	}
 	if p.req.Context.ContextId == "" {
@@ -97,7 +97,7 @@ func WithProcessTimeout(t time.Duration) func(*Process) {
 }
 func WithStartNode(startNodeId string) func(*Process) {
 	return func(p *Process) {
-		p.req.StartNodeId = startNodeId
+		p.req.StartNodeIds = append(p.req.StartNodeIds, startNodeId)
 	}
 }
 func WithFlowId(flowId string) func(*Process) {

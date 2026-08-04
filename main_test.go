@@ -119,7 +119,7 @@ func TestResources(t *testing.T) {
 	b, err := sonic.Marshal(l)
 	fmt.Println(string(b), err)
 
-	pid, err := inflow.NewProcess("node0" /*inflow.WithInflowInstanceUrl("https://cpux:3002"),*/, inflow.WithContextDocument("ctx-123"), inflow.WithFlowId("f-a-122"))
+	pid, err := inflow.NewProcess([]string{"node0"} /*inflow.WithInflowInstanceUrl("https://cpux:3002"),*/, inflow.WithContextDocument("ctx-123"), inflow.WithFlowId("f-a-122"))
 	fmt.Println("New Process Error ", err)
 	b, err = sonic.Marshal(pid)
 	fmt.Println(string(b), err)

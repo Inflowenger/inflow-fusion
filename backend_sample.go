@@ -161,7 +161,7 @@ func (isvc *ImplSvcExample) RetrieveFlow(msg *nats.Msg) {
 				Key:   "result",
 				Extrinsic: &models.ExtrinsicRule{
 					Subject: "my.internal.svc.persist.task",
-					Data:    map[string]any{"taskId": 123, "status": "done"},
+					OperationData:    map[string]any{"taskId": 123, "status": "done"},
 				},
 				Next: []models.Next{},
 			},

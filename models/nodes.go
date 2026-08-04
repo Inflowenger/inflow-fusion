@@ -34,7 +34,7 @@ type GoToRule struct {
 type ExtrinsicRule struct {
 	InfraIsolated     InfraIsolated  `json:"infra_isolated" bson:"infra_isolated"`
 	Subject           string         `json:"subject"`
-	Data              map[string]any `json:"data"`
+	OperationData     map[string]any `json:"op"`
 	ReqTimeoutSecound uint8          `json:"request_timeout_sec"` // default is 5
 }
 
