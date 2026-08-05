@@ -190,4 +190,6 @@ Issues and PRs are welcome. Since the API is still moving, consider opening an i
 
 ## License
 
-Not yet decided — do not assume a permissive license until a `LICENSE` file is added.
+Licensed under the Apache License, Version 2.0 — see [LICENSE](LICENSE) for the full text.
+
+Copyright 2026 Mehdi Shokohifar. Attribution requirements and trademark terms are in [NOTICE](NOTICE): "Inflowenger", "FloMorphic" and their logos are trademarks of the copyright holder, and the Apache License does not grant permission to use those marks.
