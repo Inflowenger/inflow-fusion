@@ -95,6 +95,32 @@ func WithProcessTimeout(t time.Duration) func(*Process) {
 		p.req.Settings.ExecuteTimeOut = int64(t.Seconds())
 	}
 }
+
+// WithRequestTimeout overrides the fallback per-request timeout (Settings.RequestTimeOut,
+// json svc_req_timeout). The runtime falls back to this for any http call or nats
+// req/res that did not carry its own timeout. A non-positive duration is ignored,
+// keeping the default.
+func WithRequestTimeout(t time.Duration) func(*Process) {
+	return func(p *Process) {
+		if t <= 0 {
+			return
+		}
+		p.req.Settings.RequestTimeOut = int64(t.Seconds())
+	}
+}
+
+// WithNodeLimit overrides the process node-traversal limit (Settings.ProcessNodeLimit,
+// json proc_node_limit) — the number of node visits after which a run is stopped, the
+// guard against runaway loops. A zero limit is ignored, keeping the default.
+func WithNodeLimit(limit uint16) func(*Process) {
+	return func(p *Process) {
+		if limit == 0 {
+			return
+		}
+		p.req.Settings.ProcessNodeLimit = limit
+	}
+}
+
 func WithStartNode(startNodeId string) func(*Process) {
 	return func(p *Process) {
 		p.req.StartNodeIds = append(p.req.StartNodeIds, startNodeId)
