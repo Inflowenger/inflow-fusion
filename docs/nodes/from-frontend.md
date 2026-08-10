@@ -141,7 +141,7 @@ How each inspector frontend node type reduces to a primitive, and which
 | `startNode` / `void` | — | **Void** | Pure marker / no-op ([void.md](void.md)) |
 | `code` | `lang` (`js`/`opa`), `logic_rule`, `opa_result` | **Code** | `NewJsNode` / `NewOpaNode` ([code.md](code.md)) |
 | `contract` | `lang`, `logic_rule`, `opa_result`, `conditions[]`, `handlers[]` (tags) | **Contract** | handlers → tagged `Next` ([contract.md](contract.md)) |
-| `extrinsic` | `serviceTopic`, `timeout`, `operationData{}` | **Extrinsic** | subject + payload + timeout ([extrinsic.md](extrinsic.md)) |
+| `extrinsic` | `serviceTopic`, `timeout`, `operationData{}` | **Extrinsic** | subject + payload + timeout; `operationData` values may carry `{{ }}` / `{{ $this… }}` runtime variables ([extrinsic.md](extrinsic.md)) |
 | `pluginNative` | `subject_prefix`, `request`, `idle_min`, `body{}`, `infra_isolated.account` | **Plugin** | maps to `PluginRule` ([plugin.md](plugin.md)) |
 | `my_a_ext` | `extension_raw`, `settings{}` (JSON Forms) | **Plugin / Extrinsic** | an *extension instance* dragged from the palette; a pre-packaged node whose form was declared by the extension, compiling to whichever primitive it wraps |
 | `goto` | goto target/return fields | **GoTo** | ([goto.md](goto.md)) |
@@ -161,7 +161,9 @@ Concretely, following the extrinsic path (see [extrinsic.md](extrinsic.md)):
    `svcHandler.ImplHandlerOnSubject("exports_db", svcHandler.SvcTopic("svc.add.issue.{TABLE_NAME}"), handler)`.
 2. On the canvas the user drops an **Extrinsic** node, opens its drawer, sets
    `serviceTopic` (resolved from the logical name `exports_db`), any `operationData`
-   payload, and a `timeout`.
+   payload, and a `timeout`. An `operationData` value may be a runtime variable —
+   `{{$.ticket.id}}`, or `{{$this.id}}` for the slice this pass is scoped to —
+   which the engine resolves just before publishing.
 3. Save ships the graph; the compiler hook reads those fields and builds
    `nodes.NewExtrinsicSvcNode(subject, …)` → `models.ExtrinsicRule`.
 4. At runtime the engine publishes to the subject, the handler writes the row and

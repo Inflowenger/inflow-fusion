@@ -21,21 +21,72 @@ request/reply against a subject your backend owns. Registration lives in this SD
 type ExtrinsicRule struct {
 	InfraIsolated     InfraIsolated  // optional: run over an isolated account instead of default
 	Subject           string         // NATS subject to publish to
-	Data              map[string]any // static payload merged into the request
+	OperationData     map[string]any // `op` — the operation payload; may carry {{ }} variables
 	ReqTimeoutSecound uint8          // default 5
 }
 ```
 
+The handler receives `models.ExtSvcRequestBody{Data, OperationData, Node}`, where
+`Data` is the **scoped context slice** the node was pointed at and `OperationData`
+(`op`) is this rule's payload. They are different things — don't read `op` out of
+`Data`.
+
 ## Builder
 
 ```go
-n := nodes.NewExtrinsicSvcNode("my.internal.svc.persist.orders")
+n := nodes.NewExtrinsicSvcNode("my.internal.svc.persist.orders",
+	nodes.WithOpData(map[string]any{"table": "orders"}))
 ```
 
 `WithIsolated(...)` scopes the call to a specific NATS account/space (the same
 `spaces` concept plugins use — see the README's provisioning section). If
 `InfraIsolated.Account` is empty, it defaults to the shared `inflow` account
-connection.
+connection. `WithOpData(...)` sets the `op` payload.
+
+## `op` is not static — `{{ }}` variables
+
+Before publishing, the engine resolves **runtime variables** in `op` against the
+flow context as it stands at that moment. A handler therefore receives values,
+never templates. This is what lets one node definition carry data that only
+exists mid-run.
+
+```go
+nodes.WithOpData(map[string]any{
+	"table":   "orders",                  // plain value, passed through
+	"limit":   "{{$.cfg.limit}}",         // → 25       (a number, not "25")
+	"who":     "user {{$.user.name}}",    // → "user Mehdi"
+	"current": "{{$this}}",               // → the slice this run is scoped to
+})
+```
+
+Four behaviours worth designing around, because they decide the shape your
+handler should expect:
+
+| | |
+|---|---|
+| **Whole-value placeholder keeps its type** | `"{{$.cfg.limit}}"` arrives as the JSON number `25`, `"{{$.cfg.on}}"` as `true`, an object path as an object. Unmarshal `op` into a typed struct accordingly — a `string` field here will fail. |
+| **A placeholder inside text is interpolated** | `"user {{$.user.name}}"` → `"user Mehdi"`, always a string. Objects render as their JSON. |
+| **Only root-level string values are walked** | `{"a": {"b": "{{$.x}}"}}` is **not** resolved — the placeholder reaches your handler verbatim. Keep templated fields at the top level of `op`. |
+| **A path that matches nothing is not an error** | The node does not fail. A whole-value placeholder becomes `{}`; inside text it interpolates as `{}` (`"value:{{$.nope}}"` → `"value:{}"`). Validate in the handler if a field is required. |
+
+### `$this` — the node's current location
+
+A path may start at **`$this`**, a root of inflow's own outside the JSON path
+spec, meaning *the location this run was handed* — the slice the node's `scope`
+selected. Because a scope matching many locations (`$.orders[*]`) runs the node
+once per location, `$this` is how `op` follows the run:
+
+```go
+nodes.WithOpData(map[string]any{
+	"orderId": "{{$this.id}}",   // this pass's order, not a fixed index
+})
+```
+
+`{{$.orders[0].id}}` would send the same order on every pass. A path without
+`$this` is untouched, and `$thisOne` is an ordinary field name, not the keyword.
+
+The same resolution — including `$this` — applies to the `op` a plugin sends
+through `CmdSvcCall`; see [../plugin-svc-calls.md](../plugin-svc-calls.md).
 
 ## Registering the service side
 
@@ -136,7 +187,7 @@ Palette type `extrinsic` (`ExtrinsicNode.vue` + `ExtrinsicDrawer.vue`). Relevant
 | Field | Backend | Meaning |
 |---|---|---|
 | `serviceTopic` | `Subject` | the subject to publish to (often resolved from a logical service name) |
-| `operationData{}` | `Data` | static key/value payload merged into the request |
+| `operationData{}` | `OperationData` (`op`) | key/value payload sent alongside the scoped data; values may carry `{{ }}` variables, resolved at run time |
 | `timeout` | `ReqTimeoutSecound` | per-request timeout (seconds) |
 
 The node has one input and one output handle — it's a linear step. `hasSettings`

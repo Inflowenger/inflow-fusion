@@ -52,6 +52,16 @@ metadata, and `Node` the full node the plugin is executing as — the same envel
 an extrinsic node sends, which is exactly why a granted plugin call behaves like
 running an extrinsic from inside the plugin.
 
+**`op` arrives resolved.** The engine runs the same runtime-variable pass over a
+plugin's `op` that it runs for an extrinsic node, just before the call goes out:
+root-level string values containing `{{ $.path }}` — or `{{ $this.path }}` for
+the location the node is running on — are replaced with live context values. A
+handler therefore never sees a template, and a whole-value placeholder arrives
+with its JSON type intact (`"{{$.cfg.limit}}"` → `25`, not `"25"`). The rules and
+their edge cases are tabled in
+[nodes/extrinsic.md](nodes/extrinsic.md) under *`op` is not static*; they apply
+identically here.
+
 **Refusing a call:** reply with an error payload (e.g. `{"error":"not granted"}`)
 — the plugin receives it as `CmdSvcCall`'s return and can react. If instead
 nothing responds (no subscriber, timeout), the engine fails the plugin node with

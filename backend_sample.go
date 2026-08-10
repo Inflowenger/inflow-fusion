@@ -161,7 +161,31 @@ func (isvc *ImplSvcExample) RetrieveFlow(msg *nats.Msg) {
 				Key:   "result",
 				Extrinsic: &models.ExtrinsicRule{
 					Subject: "my.internal.svc.persist.task",
-					OperationData:    map[string]any{"taskId": 123, "status": "done"},
+					// `op` is not a static payload: the engine resolves runtime
+					// variables in every root-level string value against the flow
+					// context just before publishing, so the handler receives values
+					// rather than templates. See docs/nodes/extrinsic.md.
+					OperationData: map[string]any{
+						"taskId": 123,    // plain value, passed through as-is
+						"status": "done", // plain value
+
+						// A value that is exactly one placeholder keeps the context
+						// value's JSON type: `sum` arrives as the number 3, not "3".
+						// (node1 emits its input back, so $.node1.sum is 3 whether or
+						// not that branch has run yet.)
+						"sum": "{{$.node1.sum}}",
+
+						// A placeholder inside longer text is interpolated instead, so
+						// `note` is always a string: "node1 squared b into 4".
+						"note": "node1 squared b into {{$.node1.a}}",
+
+						// `$this` is this node's own location — whatever `Scope` above
+						// selects. Nothing writes $.node8 in this flow, so here it
+						// arrives as {}; it earns its keep when a scope selects many
+						// (`$.orders[*]`), where the node runs once per location and
+						// `$this` follows each pass instead of pinning an index.
+						"current": "{{$this}}",
+					},
 				},
 				Next: []models.Next{},
 			},
