@@ -147,6 +147,18 @@ func WithInflowToken(url ,token string) func(*Process) {
 		p.resourceToken = token
 	}
 }
+
+// WithResume marks the process as a continuation of an earlier run over the same
+// context. Pair it with the same PID/contextId and StartNodeIds set to the
+// successors of the node the previous run terminated at (e.g. a `continue after`
+// gate): the engine seeds the traversal snapshot the previous run left in the
+// context header so a join downstream of the resume point does not lock waiting
+// on a dependency that already completed. A fresh run omits this.
+func WithResume() func(*Process) {
+	return func(p *Process) {
+		p.req.Resume = true
+	}
+}
 func WithInflowJwtSecret(url ,secret string) func(*Process) {
 	return func(p *Process) {
 		p.resourceUrl = url

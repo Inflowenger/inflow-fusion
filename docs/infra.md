@@ -38,9 +38,10 @@ type ProcessRequest struct {
 	Context      ContextTopicsPattern // NATS subjects the engine should use for this run's context
 	Flow         FlowEngine           // NATS subject to fetch the flow definition
 	PID          string               // process id, auto-generated (UUID) if empty
-	StartNodeId  string
+	StartNodeIds []string             // one or more nodes to start at (see below)
 	Settings     Settings             // timeouts, node execution cap
 	Meta         map[string]string    // free-form; also used to fill subject templates
+	Resume       bool                 // continue an earlier run over the same context (see Resume)
 }
 
 type Settings struct {
@@ -51,6 +52,18 @@ type Settings struct {
 ```
 
 `Context.Getter`/`Context.Setter`/`Flow.GetFlow` are subject templates auto-filled from `contextId`/`flowId`/any `Meta` entries unless you set them explicitly (see [nodes.md](nodes.md) and `inflow.NewProcess`).
+
+#### Start nodes
+
+`StartNodeIds` is where the run enters. A **single** id is the historical trigger semantics: that node does not itself run — its successors are queued and it is recorded done. **Multiple** ids (or any resume) queue the named nodes directly, so they *run* as tasks. Build it with `inflow.NewProcess(ids)` or add more with `WithStartNode`.
+
+#### Resume
+
+`Resume` continues an earlier run over the **same context** (same `contextId`, typically the same `PID`). The pattern: a node such as a `continue after` gate returns `{"_cmd":"stop"}`, the process stops, and later — after whatever delay your backend schedules, which the engine knows nothing about — you start a new process whose `StartNodeIds` are the **successors** of that terminated node, with `Resume: true` (`inflow.WithResume()`).
+
+Why the flag matters: node results already live in the context document, so a plain restart continues fine on a linear path. But a *join* downstream of the resume point checks the completion **generation** of its dependencies, not their data — and a dependency that completed before the stop is not re-run from the resume point. Without `Resume`, that join waits until the process times out. With it, the engine seeds the traversal snapshot the previous run left in the context header, so the join sees its already-completed dependencies and fires.
+
+`Resume` is additive: omit it and the request behaves exactly as before. It only takes effect when a matching snapshot is present in the context header **and** the flow definition is unchanged since it was taken (the engine gates on a structural signature and falls back to a blank continue on drift).
 
 ### `ProcessResponse`
 
@@ -83,6 +96,13 @@ type ContextDoc struct {
 	Header map[string]any `json:"header"`
 }
 ```
+
+`Header` is per-context memory that survives across runs. Your backend stores and returns it verbatim — it is a `map[string]any`, so new reserved keys are forward-compatible. Two kinds of entry live there, both engine-managed; treat them as opaque:
+
+- **Node registry** — one entry per call site (keyed `"<scope>:<nodeId>"`), holding what a node left for the next run, e.g. a plugin's `jobId` so a job that outlived the process can be reconnected. Handed back to the plugin on its next handshake as `_registry`.
+- **Traversal snapshot** (`_sched`) — the previous run's completed node generations and join watermarks, written on every finish and read back only when a request sets `Resume`. This is what lets a continuation's downstream join see its already-done dependencies. It is keyed by node id and gated by a flow signature, so it is inert against a changed flow.
+
+Neither key needs anything from your backend beyond storing the header as-is.
 
 ## NATS: your backend's own extrinsic services
 

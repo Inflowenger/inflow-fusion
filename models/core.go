@@ -17,6 +17,14 @@ type ProcessRequest struct {
 	PID          string               `json:"pid"`
 	Settings     Settings             `json:"settings"`
 	Meta         map[string]string    `json:"meta"`
+	// Resume marks this process as a continuation of an earlier run over the same
+	// context (same PID/contextId). The StartNodeIds are the successors of the
+	// node the previous run terminated at, and the engine seeds the traversal
+	// snapshot the previous run left in the context header so a join downstream of
+	// the resume point sees its already-completed dependencies instead of locking.
+	// Omitted (false) for a fresh run — the field is additive and older requests
+	// decode unchanged.
+	Resume bool `json:"resume,omitempty"`
 }
 
 type Settings struct {
