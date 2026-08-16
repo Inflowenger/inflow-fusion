@@ -49,6 +49,13 @@ type ResumeState struct {
 	FlowSig  string             `json:"flowSig"`
 	Traverse map[string]NodeGen `json:"traverse"`
 	JoinGen  map[string]int     `json:"joinGen"`
+	// Flows lists every flow scope the run loaded — the main flow plus every
+	// GoTo namespace mounted under it — taken from the store's per-flow count
+	// map. A continuation only receives its start nodes as bare node ids, so on
+	// resume this is what tells it which flow scope each of those nodes belongs
+	// to when a node terminated (e.g. `_cmd:stop` from continue-after) inside a
+	// GoTo target rather than the main flow.
+	Flows []string `json:"flows,omitempty"`
 }
 
 // NodeGen is a node's traversal state on the wire: its generation (completion
