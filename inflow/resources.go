@@ -115,6 +115,20 @@ func GetResourceCandidList() []InflowResource {
 	return out
 }
 
+// GetPinnedResource returns a copy of the resource every dispatch is currently
+// pinned to, or nil when dispatch is round-robin across the whole pool. It lets a
+// caller (the settings dialog) show which single resource is in use — whether the
+// pin came from PinResourceTag or from an explicit PinResource call.
+func GetPinnedResource() *InflowResource {
+	resourceMu.RLock()
+	defer resourceMu.RUnlock()
+	if pinnedResource == nil {
+		return nil
+	}
+	cp := *pinnedResource
+	return &cp
+}
+
 // AddResource manually adds one resource to the dispatch pool, alongside those
 // loaded from infra. It is the "add a resource by hand" path of the settings
 // dialog: probe it for liveness exactly as a loaded resource, and on success fold
