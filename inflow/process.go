@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
 	"slices"
 	"time"
 
@@ -50,18 +49,11 @@ func NewProcess(startNodeIds []string, opts ...func(*Process)) (*Process, error)
 			p.resourceToken = candidInflow.Token
 		}
 	}
-	resurl, err := url.Parse(p.resourceUrl)
+	normalized, err := normalizeResourceUrl(p.resourceUrl)
 	if err != nil {
 		return nil, errors.New("invalid value of inflow  resource url")
-
 	}
-	if resurl.Port() == "" {
-		p.resourceUrl = fmt.Sprintf("%s:%s", p.resourceUrl, models.INFLOW_REST_PORT)
-	}
-	if resurl.Scheme == "" {
-		p.resourceUrl = fmt.Sprintf("http://%s", p.resourceUrl)
-
-	}
+	p.resourceUrl = normalized
 	if len(p.req.StartNodeIds)==0 {
 		return nil, errors.New("startNodeId is required")
 	}

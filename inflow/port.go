@@ -43,8 +43,13 @@ func InitBackend(opts ...func(*InflowWire)) error {
 	if err != nil {
 		return err
 	}
-	inflow.ReloadResources(100)
+	// Published before ReloadResources so the liveness probe run there can reach
+	// the backend — for its logger and the infra-bearer token fallback used by
+	// resources whose portal carries no secret. init() has already finished, so
+	// exposing the instance now is safe; the resource pool is simply still empty
+	// until the reload fills it.
 	inflowWireInstance = &inflow
+	inflow.ReloadResources(100)
 	return err
 }
 

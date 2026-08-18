@@ -38,6 +38,26 @@ func SendHttpPost(c context.Context, headers map[string]string, address string, 
 	// }
 	// return response, err
 }
+// SendHttpGetRaw performs a GET and returns the raw response so the caller can
+// inspect the status code — unlike SendHttpGet, which only unmarshals the body.
+// It is what the resource liveness probe uses to tell a healthy resource (200)
+// from one that is reachable but wrong (auth drift, a different service on the
+// host); a transport failure (unreachable/moved host) returns an error.
+func SendHttpGetRaw(c context.Context, headers map[string]string, address string, timeout time.Duration) (*gohttpclient.Response, error) {
+	opts := []gohttpclient.ClientOption{
+		gohttpclient.WithDefaultHeaders(),
+		gohttpclient.WithTimeout(timeout),
+	}
+	client := gohttpclient.New(address, opts...)
+	reqOpts := []gohttpclient.Option{
+		gohttpclient.WithHeader("Content-type", "application/json"),
+	}
+	for hKey, hv := range headers {
+		reqOpts = append(reqOpts, gohttpclient.WithHeader(hKey, hv))
+	}
+	return client.Get(c, "", reqOpts...)
+}
+
 func SendHttpGet[T any](c context.Context, headers map[string]string, address string, responseModel T) (*T, error) {
 	opts := []gohttpclient.ClientOption{
 		gohttpclient.WithDefaultHeaders(),
