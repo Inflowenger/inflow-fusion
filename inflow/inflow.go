@@ -45,14 +45,34 @@ func (iw *InflowWire) GetBearerToken() string {
 	return fmt.Sprintf("Bearer %s", iw.token)
 
 }
-func (iw *InflowWire) GetResourceBearerToken(url string) string {
-	for _,r:=range iw.resources{
-		if r.Url ==  url{
-			if r.RegisterPortal.JwtSecret == ""{
-				break // to return infra bearer token
-			}
+// GetResourceToken returns the raw portal-signed token for the resource at rawUrl,
+// or "" when no such resource is known or its portal carries no secret (callers
+// then fall back to the infra bearer). URLs are compared on their normalized form:
+// a process row stores the normalized url (p.GetResource()) while infra stores it
+// bare, so a raw string match would miss and lose the resource's own credential —
+// the root of the stop bug.
+func (iw *InflowWire) GetResourceToken(rawUrl string) string {
+	target, err := normalizeResourceUrl(rawUrl)
+	if err != nil {
+		target = rawUrl
+	}
+	for _, r := range iw.resources {
+		norm, nerr := normalizeResourceUrl(r.Url)
+		if nerr != nil {
+			norm = r.Url
+		}
+		if norm == target && r.RegisterPortal.JwtSecret != "" {
 			return makeTokenWithHs256(r.RegisterPortal.JwtSecret)
 		}
+	}
+	return ""
+}
+
+// GetResourceBearerToken returns the Authorization header value for the resource at
+// rawUrl: its portal token when it has one, otherwise the infra bearer.
+func (iw *InflowWire) GetResourceBearerToken(rawUrl string) string {
+	if t := iw.GetResourceToken(rawUrl); t != "" {
+		return fmt.Sprintf("Bearer %s", t)
 	}
 	return fmt.Sprintf("Bearer %s", iw.token)
 

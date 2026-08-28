@@ -17,9 +17,21 @@ type Process struct {
 	resourceUrl string	
 	resourceToken string
 }
+// NewStopProcess builds a Process addressed to an already-launched run by its pid
+// and the resource url it was dispatched to (both captured on the process row at
+// start). Like NewProcess, it resolves the resource token here, at construction —
+// the token is not persisted on the row, so it is re-derived from the live resource
+// list by url. This is what lets Stop send the fractal resource's own portal token
+// instead of the infra bearer, which a secured engine rejects.
+func NewStopProcess(pid, resourceUrl string) *Process {
+	p := &Process{req: models.ProcessRequest{PID: pid}, resourceUrl: resourceUrl}
+	if b := GetInflowBackend(); b != nil {
+		p.resourceToken = b.GetResourceToken(resourceUrl)
+	}
+	return p
+}
 func StopProcess(ctx context.Context, pid ,resourceUrl string) (*models.ProcessResponse,error) {
-	p:=&Process{req: models.ProcessRequest{PID: pid}, resourceUrl: resourceUrl}
-	return p.Stop(ctx)
+	return NewStopProcess(pid, resourceUrl).Stop(ctx)
 }
 func NewProcess(startNodeIds []string, opts ...func(*Process)) (*Process, error) {
 
@@ -196,9 +208,9 @@ func (p *Process) Stop(ctx context.Context) (*models.ProcessResponse,error) {
 	// 	return nil,errors.New("inflow backend init is required before any request")
 	// }
 	url:=fmt.Sprintf("%s/engine/stop/%s",p.resourceUrl, p.req.PID)
-	// Mirror Exec: use the resource's own token when it has one, otherwise fall
-	// back to the backend bearer. StopProcess(pid, resourceUrl) builds the Process
-	// with no token, so without this fallback a secured engine rejects the stop.
+	// Symmetric with Exec: use the resource's own portal token (resolved at
+	// construction, see NewStopProcess), falling back to the infra bearer only when
+	// the resource's portal carries no secret.
 	token:=fmt.Sprintf("Bearer %s",p.resourceToken)
 	if p.resourceToken == ""{
 		token = GetInflowBackend().GetBearerToken()
