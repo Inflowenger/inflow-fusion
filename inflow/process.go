@@ -195,8 +195,15 @@ func (p *Process) Stop(ctx context.Context) (*models.ProcessResponse,error) {
 	// if backend == nil {
 	// 	return nil,errors.New("inflow backend init is required before any request")
 	// }
-	url:=fmt.Sprintf("%s/ps/stop/%s",p.resourceUrl, p.req.PID)
-	response, err := etc.SendHttpPost(ctx, map[string]string{"Authorization": fmt.Sprintf("Bearer %s",p.resourceToken)},url, p.req)
+	url:=fmt.Sprintf("%s/engine/stop/%s",p.resourceUrl, p.req.PID)
+	// Mirror Exec: use the resource's own token when it has one, otherwise fall
+	// back to the backend bearer. StopProcess(pid, resourceUrl) builds the Process
+	// with no token, so without this fallback a secured engine rejects the stop.
+	token:=fmt.Sprintf("Bearer %s",p.resourceToken)
+	if p.resourceToken == ""{
+		token = GetInflowBackend().GetBearerToken()
+	}
+	response, err := etc.SendHttpPost(ctx, map[string]string{"Authorization": token},url, p.req)
 	if err!=nil{
 		return nil,err
 	}

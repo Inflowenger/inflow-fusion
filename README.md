@@ -35,7 +35,7 @@ See [docs/nodes.md](docs/nodes.md) for the full node reference and [docs/compile
  │                     │        NATS: get flow / get,set context     │                             │
  │                     │ <───────────────────────────────────────────│  implements IInflowService  │
  └─────────┬───────────┘                                             └──────────────┬─────────────┘
-           │ REST: registered engine instances                                      │ REST: POST /engine, /ps/stop
+           │ REST: registered engine instances                                      │ REST: POST /engine, /engine/stop
            ▼                                                                        ▼
  ┌────────────────────┐        NATS: get flow / get,set context      ┌───────────────────────────┐
  │  Inflow Engine(s)   │ ───────────────────────────────────────────>│   (back to Your Backend)   │

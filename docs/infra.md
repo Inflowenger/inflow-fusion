@@ -27,7 +27,7 @@ Response envelopes are `{"data": ..., "error": ...}`; the SDK unwraps `.Data` an
 | Method | Path | Called by | Purpose |
 |---|---|---|---|
 | `POST` | `{engineUrl}/engine` | `Process.Exec` | Start a process: body is `models.ProcessRequest` |
-| `POST` | `{engineUrl}/ps/stop/{pid}` | `Process.Stop` / `inflow.StopProcess` | Stop a running process |
+| `POST` | `{engineUrl}/engine/stop/{pid}` | `Process.Stop` / `inflow.StopProcess` | Stop a running process |
 
 `engineUrl` comes from the round-robin pool (`inflow.GetResourceCandid`); if it has no scheme it's prefixed with `http://`, and if it has no port it's suffixed with `models.INFLOW_REST_PORT` (`9001`).
 
