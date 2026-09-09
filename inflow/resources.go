@@ -2,8 +2,11 @@ package inflow
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -135,10 +138,23 @@ func GetPinnedResource() *InflowResource {
 // it into the round-robin. If it carries PinResourceTag it becomes the pinned
 // resource, so every subsequent dispatch uses only it. A resource already in the
 // pool at the same Url is replaced rather than duplicated. Returns an error if the
-// resource fails the liveness probe.
+// resource fails the liveness probe, saying which part of it failed.
 func AddResource(res InflowResource) error {
-	if !probeResource(res) {
-		return fmt.Errorf("inflow resource %q (%s) failed liveness probe — not added", res.Name, res.Url)
+	// A hand-added resource carries no credential of its own, but infra usually
+	// already knows one: an engine enrolled through a portal is dispatched to with
+	// the token that portal issued. Look that up by url before probing, so adding
+	// "http://localhost:9001" from the settings dialog authenticates exactly the
+	// way the same engine does when it is loaded from infra. Without it the probe
+	// falls back to the infra bearer — a different key — and a portal-registered
+	// engine answers 401: the resource is live and correctly addressed, yet never
+	// joins the pool. An operator cannot paste a token they were never shown.
+	if res.Token == "" {
+		if b := GetInflowBackend(); b != nil {
+			res.Token = b.GetResourceToken(res.Url)
+		}
+	}
+	if err := probeResource(res); err != nil {
+		return fmt.Errorf("inflow resource %q (%s) %w — not added", res.Name, res.Url, err)
 	}
 	resourceMu.RLock()
 	next := make([]InflowResource, 0, len(liveResources)+1)
@@ -188,22 +204,40 @@ func hasTag(tags []string, want string) bool {
 	return false
 }
 
-// normalizeResourceUrl brings a raw resource URL (as infra stored it) to the
-// address the HTTP client dials: a default REST port when none is given and an
-// http scheme when none is given. Exec and the liveness probe share it so a
-// resource is probed at exactly the address a dispatch would use.
+// normalizeResourceUrl brings a raw resource URL (as infra stored it, or as an
+// operator typed it into the settings dialog) to the address the HTTP client
+// dials: an http scheme when none is given and the default REST port when none
+// is given. Exec and the liveness probe share it so a resource is probed at
+// exactly the address a dispatch would use.
+//
+// The scheme is fixed up *before* parsing, not after. url.Parse reads a
+// scheme-less "localhost:9001" as the scheme "localhost" with opaque "9001", so
+// u.Port() comes back empty and a default port gets appended to a string that
+// already has one ("localhost:9001:9001"); a bare "127.0.0.1:9001" fails to
+// parse outright ("first path segment in URL cannot contain colon"). Either way
+// the resource is live but unreachable at the address we built. Prefixing the
+// scheme first makes both parse as a real host:port.
 func normalizeResourceUrl(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", errors.New("resource url is empty")
+	}
+	if !strings.Contains(raw, "://") {
+		raw = "http://" + raw
+	}
 	u, err := url.Parse(raw)
 	if err != nil {
 		return "", err
 	}
+	if u.Host == "" {
+		return "", fmt.Errorf("resource url %q has no host", raw)
+	}
 	if u.Port() == "" {
-		raw = fmt.Sprintf("%s:%s", raw, models.INFLOW_REST_PORT)
+		// Hostname() drops any IPv6 brackets, JoinHostPort puts them back, so a
+		// "[::1]" host does not end up double-bracketed.
+		u.Host = net.JoinHostPort(u.Hostname(), models.INFLOW_REST_PORT)
 	}
-	if u.Scheme == "" {
-		raw = fmt.Sprintf("http://%s", raw)
-	}
-	return raw, nil
+	return u.String(), nil
 }
 
 // filterLiveResources probes every resource from *this* inflow-fusion, in
@@ -213,46 +247,52 @@ func filterLiveResources(resources []InflowResource) []InflowResource {
 	if len(resources) == 0 {
 		return resources
 	}
-	alive := make([]bool, len(resources))
+	probeErr := make([]error, len(resources))
 	var wg sync.WaitGroup
 	for i := range resources {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			alive[i] = probeResource(resources[i])
+			probeErr[i] = probeResource(resources[i])
 		}(i)
 	}
 	wg.Wait()
 
 	live := make([]InflowResource, 0, len(resources))
 	for i, res := range resources {
-		if alive[i] {
+		if probeErr[i] == nil {
 			live = append(live, res)
 			continue
 		}
 		if b := GetInflowBackend(); b != nil {
-			b.GetLogger().Warn(fmt.Sprintf("inflow resource %q (%s) failed liveness probe — excluded from dispatch", res.Name, res.Url))
+			b.GetLogger().Warn(fmt.Sprintf("inflow resource %q (%s) %v — excluded from dispatch", res.Name, res.Url, probeErr[i]))
 		}
 	}
 	return live
 }
 
-// probeResource reports whether a resource is reachable and healthy from here.
-// It calls the resource's authenticated process-list endpoint, so a 200 proves
-// three things at once: the address resolves, the fractal instance is up, and
-// the token is accepted. A transport error or any non-200 means the resource
-// must not be handed out. The token fallback matches Exec: a portal with no
-// secret authenticates with the infra bearer.
-func probeResource(res InflowResource) bool {
+// probeResource reports whether a resource is reachable and healthy from here,
+// returning nil when it is and a describing error when it is not. It calls the
+// resource's authenticated process-list endpoint, so a 200 proves three things
+// at once: the address resolves, the fractal instance is up, and the token is
+// accepted. A transport error or any non-200 means the resource must not be
+// handed out. The token fallback matches Exec: a portal with no secret
+// authenticates with the infra bearer.
+//
+// The error says *which* of those three failed. They need different fixes — a
+// wrong address, a stopped engine and a rejected credential are not the same
+// problem — and collapsing them into one "failed liveness probe" line leaves an
+// operator with a live engine, a correct URL and no idea why it will not join.
+func probeResource(res InflowResource) error {
 	addr, err := normalizeResourceUrl(res.Url)
 	if err != nil {
-		return false
+		return fmt.Errorf("has an unusable url: %w", err)
 	}
 	token := "Bearer " + res.Token
 	if res.Token == "" {
 		b := GetInflowBackend()
 		if b == nil {
-			return false
+			return errors.New("cannot be probed: the inflow backend is not connected yet")
 		}
 		token = b.GetBearerToken()
 	}
@@ -260,7 +300,18 @@ func probeResource(res InflowResource) bool {
 	defer cancel()
 	resp, err := etc.SendHttpGetRaw(ctx, map[string]string{"Authorization": token}, addr+"/engine/ps", probeTimeout)
 	if err != nil {
-		return false
+		return fmt.Errorf("is unreachable at %s: %w", addr, err)
 	}
-	return resp.Status() == 200
+	switch code := resp.Status(); {
+	case code == 200:
+		return nil
+	case code == 400 || code == 401 || code == 403:
+		// The engine answered, so it is up and the address is right — it refused
+		// the credential. A portal-registered engine signs with the secret its
+		// portal issued, which is not the infra bearer probeResource falls back
+		// to, so this is what a hand-added resource hits when no token is given.
+		return fmt.Errorf("rejected the credential at %s (HTTP %d): it is up, but the token sent is not the one it accepts — supply the token its portal issued", addr, code)
+	default:
+		return fmt.Errorf("is unhealthy at %s: answered HTTP %d", addr, code)
+	}
 }
