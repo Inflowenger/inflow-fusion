@@ -53,17 +53,48 @@ var pinnedResource *InflowResource
 const probeTimeout = 3 * time.Second
 
 func SetResourceCandid(list []models.RegisteredInflow) (*roundrobin.RoundRobin[InflowResource], error) {
-	all := make([]InflowResource, 0, len(list))
-	for _, el := range list {
-		all = append(all, InflowResource{Token: makeTokenWithHs256(el.RegisterPortal.JwtSecret), Name: el.Name, Url: el.Url, Tags: el.Tags})
-	}
 	// Validate liveness once, here at load: only resources this inflow-fusion can
 	// actually reach become dispatch candidates. A resource that was reinstalled,
 	// moved host, or is unreachable from here is dropped, so GetResourceCandid
 	// never hands one out. When none survive, roundrobin.New returns nil and
 	// GetResourceCandid reports no resource — failing closed on purpose.
-	live := filterLiveResources(all)
+	live := filterLiveResources(toInflowResources(list), true)
 	return rebuildCandidates(live)
+}
+
+// toInflowResources converts infra's registered-engine rows into pool entries,
+// signing each one's dispatch token with the secret of the portal it enrolled
+// through (empty secret ⇒ empty token ⇒ the infra bearer at dispatch time).
+func toInflowResources(list []models.RegisteredInflow) []InflowResource {
+	all := make([]InflowResource, 0, len(list))
+	for _, el := range list {
+		all = append(all, InflowResource{Token: makeTokenWithHs256(el.RegisterPortal.JwtSecret), Name: el.Name, Url: el.Url, Tags: el.Tags})
+	}
+	return all
+}
+
+// HasLiveResources reports whether the dispatch pool holds at least one resource
+// — i.e. whether GetResourceCandid can hand anything out.
+func HasLiveResources() bool {
+	resourceMu.RLock()
+	defer resourceMu.RUnlock()
+	return len(liveResources) > 0
+}
+
+// adoptIfPoolEmpty installs live as the dispatch pool only if the pool is still
+// empty, and reports whether it did. It is what the startup retry uses: by the
+// time a retry has fetched and probed infra's list, an operator may already have
+// added a resource by hand, and a background reload must not throw that away
+// (the explicit /resource/reload is allowed to — this path is not). The check
+// and the swap happen under one lock so nothing can slip in between.
+func adoptIfPoolEmpty(live []InflowResource) bool {
+	resourceMu.Lock()
+	defer resourceMu.Unlock()
+	if len(liveResources) > 0 {
+		return false
+	}
+	rebuildCandidatesLocked(live)
+	return true
 }
 
 // rebuildCandidates swaps the whole dispatch pool to live under the lock: it
@@ -73,7 +104,12 @@ func SetResourceCandid(list []models.RegisteredInflow) (*roundrobin.RoundRobin[I
 func rebuildCandidates(live []InflowResource) (*roundrobin.RoundRobin[InflowResource], error) {
 	resourceMu.Lock()
 	defer resourceMu.Unlock()
+	return rebuildCandidatesLocked(live)
+}
 
+// rebuildCandidatesLocked is rebuildCandidates for callers that already hold
+// resourceMu for writing.
+func rebuildCandidatesLocked(live []InflowResource) (*roundrobin.RoundRobin[InflowResource], error) {
 	liveResources = live
 	resourcesList := make([]*InflowResource, 0, len(live))
 	for i := range liveResources {
@@ -241,9 +277,11 @@ func normalizeResourceUrl(raw string) (string, error) {
 }
 
 // filterLiveResources probes every resource from *this* inflow-fusion, in
-// parallel, and returns only those that answer. Excluded ones are logged so an
-// operator can see which resource dropped out and why.
-func filterLiveResources(resources []InflowResource) []InflowResource {
+// parallel, and returns only those that answer. With logExcluded set, each one
+// dropped is logged so an operator can see which resource fell out and why; the
+// startup retry passes false, since repeating the same warnings every backoff
+// tick for the same stale entries would only bury the line that matters.
+func filterLiveResources(resources []InflowResource, logExcluded bool) []InflowResource {
 	if len(resources) == 0 {
 		return resources
 	}
@@ -264,7 +302,7 @@ func filterLiveResources(resources []InflowResource) []InflowResource {
 			live = append(live, res)
 			continue
 		}
-		if b := GetInflowBackend(); b != nil {
+		if b := GetInflowBackend(); b != nil && logExcluded {
 			b.GetLogger().Warn(fmt.Sprintf("inflow resource %q (%s) %v — excluded from dispatch", res.Name, res.Url, probeErr[i]))
 		}
 	}

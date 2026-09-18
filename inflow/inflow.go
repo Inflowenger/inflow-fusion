@@ -93,17 +93,56 @@ func makeTokenWithHs256(secret string)string{
 // Get all Inflow Instance (registered inflow instances) from infra and Add to Round-Robin struct to use by create new process function
 func (iw *InflowWire) ReloadResources(limit int) ([]models.RegisteredInflow, error) {
 
+	list, err := iw.fetchResources(limit)
+	if err != nil {
+		return nil, err
+	}
+	_, err = SetResourceCandid(list)
+	if err != nil {
+		iw.GetLogger().Error(fmt.Sprintf("error in load inflow resources list %s", err.Error()))
+	}
+	return list, nil
+
+}
+
+// fetchResources reads the registered engine list from infra and remembers it on
+// the wire, without touching the dispatch pool.
+func (iw *InflowWire) fetchResources(limit int) ([]models.RegisteredInflow, error) {
 	list, err := etc.SendHttpGet(context.Background(), map[string]string{"Authorization": iw.GetBearerToken()}, fmt.Sprintf("%s/inflow/resource?per_page=%d", iw.Infra, limit), models.InflowResourcesList{})
 	if err != nil {
 		return nil, err
 	}
 	iw.resources = list.Data.List
-	_, err = SetResourceCandid(iw.resources)
-	if err != nil {
-		iw.GetLogger().Error(fmt.Sprintf("error in load inflow resources list %s", err.Error()))
-	}
 	return list.Data.List, nil
+}
 
+// ReloadResourcesIfEmpty re-reads infra's engine list and installs the reachable
+// ones as the dispatch pool ONLY if the pool is still empty — the check and the
+// swap happen under one lock, so a resource an operator added by hand in the
+// meantime is kept (only the explicit ReloadResources is allowed to drop it).
+// It reports whether the pool was filled, plus how many of the registered
+// resources answered, so a caller can log or decide to try again. Unreachable
+// resources are not logged one by one here: a caller on a retry loop would
+// repeat the same lines every tick, and the startup ReloadResources already
+// said which ones dropped and why.
+//
+// It is the building block for a retry policy the SDK does not own: on a host
+// reboot every container starts at once and the engine is usually still
+// registering when InitBackend's one-shot reload probes it, and it is the
+// application that decides how long and how often to keep looking.
+func (iw *InflowWire) ReloadResourcesIfEmpty(limit int) (filled bool, reachable, registered int, err error) {
+	if HasLiveResources() {
+		return false, 0, 0, nil
+	}
+	list, err := iw.fetchResources(limit)
+	if err != nil {
+		return false, 0, 0, err
+	}
+	live := filterLiveResources(toInflowResources(list), false)
+	if len(live) == 0 {
+		return false, 0, len(list), nil
+	}
+	return adoptIfPoolEmpty(live), len(live), len(list), nil
 }
 func (iw *InflowWire) init() error {
 	cred, err := iw.getCred()

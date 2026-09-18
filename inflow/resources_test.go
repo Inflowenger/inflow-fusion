@@ -67,3 +67,57 @@ func TestNormalizeResourceUrlIsIdempotent(t *testing.T) {
 		}
 	}
 }
+
+// resetPool empties the dispatch pool so a test starts from the "nothing loaded
+// yet" state the startup retry reasons about.
+func resetPool(t *testing.T) {
+	t.Helper()
+	rebuildCandidates(nil)
+	if HasLiveResources() {
+		t.Fatal("pool not empty after reset")
+	}
+}
+
+// The startup retry may only fill an EMPTY pool. If an operator added a resource
+// by hand while a retry tick was still probing, that resource must survive: the
+// retry's late result is dropped, not the operator's.
+func TestAdoptIfPoolEmpty(t *testing.T) {
+	resetPool(t)
+	t.Cleanup(func() { rebuildCandidates(nil) })
+
+	fromRetry := []InflowResource{{Name: "fractal-1", Url: "http://fractal-1:9001"}}
+	if !adoptIfPoolEmpty(fromRetry) {
+		t.Fatal("empty pool: adoptIfPoolEmpty should adopt and report true")
+	}
+	if got := GetResourceCandidList(); len(got) != 1 || got[0].Url != fromRetry[0].Url {
+		t.Fatalf("pool after adopt = %+v, want %+v", got, fromRetry)
+	}
+	if GetResourceCandid() == nil {
+		t.Fatal("GetResourceCandid should hand out the adopted resource")
+	}
+
+	byHand := []InflowResource{{Name: "manual", Url: "http://manual:9001", Tags: []string{PinResourceTag}}}
+	rebuildCandidates(byHand) // stands in for AddResource, minus the network probe
+	if adoptIfPoolEmpty(fromRetry) {
+		t.Fatal("non-empty pool: adoptIfPoolEmpty must not replace it")
+	}
+	if got := GetResourceCandidList(); len(got) != 1 || got[0].Url != byHand[0].Url {
+		t.Fatalf("pool after refused adopt = %+v, want the hand-added %+v", got, byHand)
+	}
+	if p := GetPinnedResource(); p == nil || p.Url != byHand[0].Url {
+		t.Fatalf("pin lost: got %+v, want %+v", p, byHand[0])
+	}
+}
+
+// An empty adopt must leave the pool empty and GetResourceCandid failing closed,
+// so a retry tick that found nothing reachable cannot install a nil round-robin
+// that later dispatches to nothing.
+func TestAdoptIfPoolEmptyWithNothingKeepsFailingClosed(t *testing.T) {
+	resetPool(t)
+	if !adoptIfPoolEmpty(nil) {
+		t.Fatal("adopting nil into an empty pool should still report true (pool was empty)")
+	}
+	if HasLiveResources() || GetResourceCandid() != nil {
+		t.Fatal("pool should stay empty and GetResourceCandid should return nil")
+	}
+}
