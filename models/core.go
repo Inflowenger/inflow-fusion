@@ -69,6 +69,7 @@ type Settings struct {
 	RequestTimeOut   int64  `json:"svc_req_timeout" bson:"svc_req_timeout"`
 	ExecuteTimeOut   int64  `json:"proc_timeout" bson:"proc_timeout"`
 	ProcessNodeLimit uint16 `json:"proc_node_limit"`
+	StopOnError       bool   `json:"stop_on_error"` 
 }
 
 type ContextTopicsPattern struct {
@@ -85,4 +86,62 @@ type FlowEngine struct {
 type ContextDoc struct {
 	Data   string         `json:"data"`
 	Header map[string]any `json:"header"`
+}
+
+// ContextHeaderErrors is the header slot a run leaves its error ledger in. The
+// underscore prefix keeps it clear of the per-node registry entries, which are
+// always "<flowScope>:<nodeId>".
+const ContextHeaderErrors = "_errors"
+
+// ErrorKind separates the two things that go wrong at a node, so a reader can
+// tell what the flow got wrong from what the platform did.
+type ErrorKind string
+
+const (
+	// ErrorKindNode is the node's own operation failing: the flow author's js or
+	// rego, the node data they wrote, a path they addressed, or something the
+	// node called that did not deliver. It is theirs to answer for, and it is
+	// what a run started with Settings.StopOnError refuses to carry on past.
+	ErrorKindNode ErrorKind = "node"
+	// ErrorKindSystem is the engine's own machinery failing while serving the
+	// node: infra that would not answer, a reply that would not marshal, a
+	// context write that did not land. Nothing in the flow caused it and nothing
+	// in the flow mends it.
+	ErrorKindSystem ErrorKind = "system"
+)
+
+// NodeError is one error a run hit, as it is written into the context header.
+//
+// A flow does not stop for a node error — it is handled and the run carries on —
+// so a run that hit several still finishes, and these are how anyone who was not
+// watching the event stream finds out. Code is a StatusFractal; Loc is set only
+// for a node whose scope fanned out, where naming the node does not place the
+// failure.
+type NodeError struct {
+	Ts   int64     `json:"ts"`
+	Kind ErrorKind `json:"kind"`
+	Flow string    `json:"flow"`
+	Node string    `json:"node"`
+	// Src is the actor that raised it — rt / js / rego / plugin:<title> — the same
+	// vocabulary ProcEvent.Src uses, so an entry here joins onto the event stream
+	// the run also published.
+	Src  string `json:"src"`
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
+	Loc  string `json:"loc,omitempty"`
+}
+
+// RunErrors is the ledger under ContextHeaderErrors: every error one run
+// recorded. It describes a single run — the engine clears the slot when it loads
+// the document — so Pid is the run that wrote all of Items, and the slot being
+// absent is a run that hit nothing.
+//
+// Count is the true total and Items may be shorter: a cascading run can raise an
+// error per location per node and the document still has to be publishable, so
+// the entries are capped at the earliest ones, which is where the cause of a
+// cascade is.
+type RunErrors struct {
+	Pid   string      `json:"pid"`
+	Count int         `json:"count"`
+	Items []NodeError `json:"items"`
 }

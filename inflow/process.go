@@ -112,7 +112,11 @@ func WithRequestTimeout(t time.Duration) func(*Process) {
 		p.req.Settings.RequestTimeOut = int64(t.Seconds())
 	}
 }
-
+func WithStopOnError(stopOnError bool) func(*Process) {
+	return func(p *Process) {
+		p.req.Settings.StopOnError = stopOnError
+	}
+}
 // WithNodeLimit overrides the process node-traversal limit (Settings.ProcessNodeLimit,
 // json proc_node_limit) — the number of node visits after which a run is stopped, the
 // guard against runaway loops. A zero limit is ignored, keeping the default.
