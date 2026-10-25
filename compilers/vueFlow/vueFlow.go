@@ -18,7 +18,7 @@ func (v *VueFlowCompiler) SetHookFunc(f func(VueFlowNode) (*models.Node, error))
 	v.hook = f
 }
 func NewVueFlowCompiler(opts ...func(*VueFlowCompiler)) *VueFlowCompiler {
-	comp := &VueFlowCompiler{nodes: make(map[string]*models.Node), guard: true, hook: func(fn VueFlowNode) (*models.Node, error) {
+	comp := &VueFlowCompiler{nodes: make(map[string]*models.Node), hook: func(fn VueFlowNode) (*models.Node, error) {
 		return &models.Node{Type: models.VoidNodeType, Title: fn.Type, ID: fn.ID}, nil
 
 	}}
@@ -33,17 +33,34 @@ func WithEachNodeFunc(f func(VueFlowNode) (*models.Node, error)) func(*VueFlowCo
 	}
 }
 
-// WithoutDependsGuard turns off the depends validation Compile runs after the
-// walk. Only useful when a caller validates the compiled map itself, with
-// ValidateDepends, and wants the raw map back whatever its state.
-func WithoutDependsGuard() func(*VueFlowCompiler) {
+// WithDependsGuard runs the depends validation (see ValidateDepends) over the
+// compiled map after the walk, merging its error-severity findings into the
+// map[nodeId]error Compile returns and leaving the full report on Report().
+//
+// It is OFF by default, deliberately. The guard answers a question about ONE
+// traversal — the one starting at the startNodeId it was given — and a caller
+// compiling a graph in order to RUN it is often not making that traversal: a
+// run resumed after a human task, or after a timer, enters at the nodes the
+// parked node handed back, several of them, in the middle of the graph, with
+// the engine seeding the earlier run's traversal state, so a join the guard
+// calls deadlocked may be exactly the join whose dependencies are already
+// satisfied. Refusing those compiles would stall correct work.
+//
+// So the guard belongs where a graph is EDITED — an editor saving a flow, a
+// tool checking a draft — with an author in front of it, and its findings are
+// help: the node, the edge to re-point and the targets it may point at
+// instead. Opt in there, and read Report() for the warnings too.
+func WithDependsGuard() func(*VueFlowCompiler) {
 	return func(vfc *VueFlowCompiler) {
-		vfc.guard = false
+		vfc.guard = true
 	}
 }
 
 // Report returns the guard outcome of the last Compile, including warnings,
-// suggested fixes and the edge ids an app should point its user at.
+// suggested fixes and the edge ids an app should point its user at. It is the
+// zero report when the compiler was built without WithDependsGuard — a caller
+// that wants the findings without the guard merging errors into Compile's map
+// can always run ValidateDepends over the returned map itself.
 func (v *VueFlowCompiler) Report() ValidationReport {
 	return v.report
 }

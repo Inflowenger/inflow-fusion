@@ -54,7 +54,7 @@ func dependsFromInbound(joins map[string][]string) func(VueFlowNode) (*models.No
 // D can never start: E only exists downstream of D.
 func TestDependsOnDownstreamNodeDeadlocks(t *testing.T) {
 	flow := buildFlow("start>A", "A>B", "A>C", "B>D", "C>D", "D>E", "E>D")
-	compiler := NewVueFlowCompiler()
+	compiler := NewVueFlowCompiler(WithDependsGuard())
 	compiler.SetHookFunc(dependsFromInbound(map[string][]string{
 		"D": {"B", "C", "E"},
 	}))
@@ -92,7 +92,7 @@ func TestDependsOnDownstreamNodeDeadlocks(t *testing.T) {
 // reachable from start without D, so the topology is valid.
 func TestBackEdgeToUpstreamDependencyIsValid(t *testing.T) {
 	flow := buildFlow("start>A", "A>B", "A>C", "B>D", "C>D", "D>E", "E>B")
-	compiler := NewVueFlowCompiler()
+	compiler := NewVueFlowCompiler(WithDependsGuard())
 	compiler.SetHookFunc(dependsFromInbound(map[string][]string{
 		"D": {"B", "C"},
 	}))
@@ -110,7 +110,7 @@ func TestBackEdgeToUpstreamDependencyIsValid(t *testing.T) {
 // the node it comes from: only the depends entry is invalid, not the loop.
 func TestBackEdgeToJoinWithoutDependIsValid(t *testing.T) {
 	flow := buildFlow("start>A", "A>B", "A>C", "B>D", "C>D", "D>E", "E>D")
-	compiler := NewVueFlowCompiler()
+	compiler := NewVueFlowCompiler(WithDependsGuard())
 	compiler.SetHookFunc(dependsFromInbound(map[string][]string{
 		"D": {"B", "C"},
 	}))
@@ -160,7 +160,7 @@ func TestDependsGuardEdgeCases(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			compiler := NewVueFlowCompiler()
+			compiler := NewVueFlowCompiler(WithDependsGuard())
 			compiler.SetHookFunc(dependsFromInbound(tc.joins))
 			compiler.Compile("start", tc.flow)
 
@@ -181,7 +181,7 @@ func TestDependsGuardEdgeCases(t *testing.T) {
 // the app can surface without refusing the flow.
 func TestDependWithoutEdgeIsWarning(t *testing.T) {
 	flow := buildFlow("start>A", "A>B", "A>C", "C>D")
-	compiler := NewVueFlowCompiler()
+	compiler := NewVueFlowCompiler(WithDependsGuard())
 	compiler.SetHookFunc(dependsFromInbound(map[string][]string{
 		"D": {"B", "C"},
 	}))
@@ -207,5 +207,33 @@ func TestValidateDependsWithoutCompiler(t *testing.T) {
 	}
 	if report := ValidateDepends("missing", nodes); !report.HasErrors() {
 		t.Fatal("expected a missing start node to be reported")
+	}
+}
+
+// The guard is opt-in: a plain compiler lowers the same deadlocking graph
+// without a word, because a caller compiling a graph to RUN it may be entering
+// it somewhere the guard's start-node walk says nothing about (see
+// WithDependsGuard). The findings stay available through ValidateDepends.
+func TestDependsGuardIsOffByDefault(t *testing.T) {
+	flow := buildFlow("start>A", "A>B", "A>C", "B>D", "C>D", "D>E", "E>D")
+	joins := map[string][]string{"D": {"B", "C", "E"}}
+
+	compiler := NewVueFlowCompiler(WithEachNodeFunc(dependsFromInbound(joins)))
+	nodes, cerror := compiler.Compile("start", flow)
+	if len(cerror) != 0 {
+		t.Fatalf("expected no errors without the guard, got %v", cerror)
+	}
+	if report := compiler.Report(); len(report.Issues) != 0 {
+		t.Fatalf("expected no report without the guard, got %v", report.Issues)
+	}
+	// The whole graph is still lowered, loop included.
+	for _, id := range []string{"start", "A", "B", "C", "D", "E"} {
+		if nodes[id] == nil {
+			t.Fatalf("node %q was not lowered", id)
+		}
+	}
+	// And the same verdict is one call away for a caller that wants it.
+	if !ValidateDepends("start", nodes).HasErrors() {
+		t.Fatal("ValidateDepends over the same map should still reject it")
 	}
 }
