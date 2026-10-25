@@ -67,6 +67,11 @@ type Next struct {
 }
 ```
 
+`Depends` is a synchronisation barrier, not a wire: it must only ever name nodes
+that can complete *before* this one. Listing a node that lives downstream makes
+the flow deadlock on its first crossing, which the compiler refuses - see
+[the depends guard](compilers/vueflow.md#the-depends-guard).
+
 Exactly one of `Code`/`GoTo`/`Extrinsic`/`Plugin`/`Contract` is populated, matching
 `Type`. The universal fields — `Title`, `Key` (output destination in context),
 `Scope` (the JSONPath slice the node reads/writes) — apply to every type.

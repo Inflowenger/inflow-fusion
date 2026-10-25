@@ -49,11 +49,106 @@ Starting from `startNodeId`, it walks the graph depth-first following outgoing e
    - `Tags` ← edge `Data.Tags`
    - `Meta` ← `{"edgeId": ..., "label": ..., "edgeHandle": edge.SourceHandle}`
 3. Recurse into each `Next.NodeId` not already visited.
-4. Return the accumulated `map[nodeId]*models.Node`, plus any per-node errors your hook returned (compilation stops walking further from a node once its hook errors).
+4. Run the [depends guard](#the-depends-guard) over the result, rejecting graphs that would deadlock at runtime.
+5. Return the accumulated `map[nodeId]*models.Node`, plus any per-node errors your hook returned (compilation stops walking further from a node once its hook errors) and any guard errors.
 
 This is why a conditional/branching frontend node (multiple output handles: `success`, `error`, `else`, ...) doesn't need special handling in the compiler itself — each handle is just an edge with its own `SourceHandle`/tags, and which tagged `Next` entries actually fire is decided at runtime. Note `Data.Tags` is carried through for **every** edge, whatever primitive it leaves, so the same wiring serves a **Contract** rule, an extrinsic reply that answers with tags, or a plugin job that routes itself — see [routing.md](../routing.md).
 
 For the deeper mechanics of how a specific handle id ends up meaning something at runtime (and a worked traversal example), see [`compilers/vueFlow/vuewFlow.md`](../../compilers/vueFlow/vuewFlow.md) — that file predates some of the field names above, so treat `models/flow.go` as the source of truth for the current `Node`/`Next` shape.
+
+## The depends guard
+
+A node with `Depends` blocks until every id it lists has completed. That makes it
+possible to draw a graph the engine accepts and then deadlocks on, so `Compile`
+runs a guard over the compiled map and reports the offending nodes.
+
+The invalid shape:
+
+```text
+start -> A ->> B, C        B, C -> D (depends: [B, C])      D -> E      E -> D
+```
+
+Wiring `E` back into `D`'s blocking input port grows the set to `[B, C, E]`. On
+the first crossing `D` waits for `E`, while `E` is only ever queued *after* `D`
+runs - nothing can advance, and the flow is stuck at `D` forever. Semantically
+the node is saying "I depend on a step that comes after me", which has no valid
+reading.
+
+### The rule
+
+> For every node `N` and every `dep` in `N.Depends`: `dep` must still be
+> reachable from the start node when `N` is removed from the graph.
+
+In dominator terms, a node may not dominate its own dependencies. This is
+deliberately *not* cycle detection, because loops are valid topology in the
+Inflowenger ecosystem and the guard must not reject them:
+
+| Back edge | `D.Depends` | Verdict | Why |
+|---|---|---|---|
+| `E -> D` | `[B, C, E]` | **error** | every path to `E` runs through `D` |
+| `E -> B` | `[B, C]` | valid | `B` is reachable via `start -> A -> B`, so it can complete before `D` |
+| `E -> D` | `[B, C]` | valid | the loop re-enters `D`, but `D` never waits for `E` |
+
+The middle row is the fix the error suggests: re-point the back edge at a node
+that already runs before the join, and the loop re-enters the join through its
+existing dependencies.
+
+### Consuming the result
+
+Error severity issues are merged into the `map[nodeId]error` that `Compile`
+already returns, so an existing caller refuses an invalid flow without any
+change. The structured report carries the rest - warnings, the edge to re-point,
+and the legal targets for it:
+
+```go
+cmpr := compiler.NewVueFlowCompiler(compiler.WithEachNodeFunc(myNodeBuilder))
+nodeMap, errsByNodeId := cmpr.Compile(startNodeId, vueFlowGraph)
+
+report := cmpr.Report()
+if err := report.Err(); err != nil {
+	return err // one error summarising every invalid depends entry
+}
+for _, issue := range report.Warnings() {
+	log.Printf("%s on node %s: %s", issue.Code, issue.NodeId, issue.Message)
+}
+```
+
+Each `ValidationIssue` is JSON-serialisable and identifies the exact canvas
+objects, which is what a frontend needs to highlight them:
+
+```json
+{
+  "code": "depend_deadlock",
+  "severity": "error",
+  "nodeId": "D",
+  "dependsOn": "E",
+  "edgeId": "e-E-D",
+  "message": "node \"D\" depends on \"E\", but \"E\" can only be reached by running \"D\" first: ...",
+  "suggestion": "re-point edge \"e-E-D\" from \"E\" so it targets a node connected to \"D\" that already runs before it (one of: \"B\", \"C\"). ...",
+  "suggestedTargets": ["B", "C"]
+}
+```
+
+| Code | Severity | Meaning |
+|---|---|---|
+| `depend_deadlock` | error | the dependency only exists downstream of the waiting node |
+| `depend_unreachable` | error | the dependency is not reachable from the start node at all |
+| `depend_unknown_node` | error | `depends` names an id that is not a node of this graph |
+| `depend_self` | error | a node waits for itself |
+| `depend_without_edge` | warning | satisfiable, but the dependency has no transition into the node - usually a stale entry |
+| `start_node_missing` | error | the start node is absent, so reachability cannot be judged |
+
+The check itself is a plain function over a compiled node map, so it is reusable
+by any other compiler or by a flow built by hand with the `nodes` builders:
+
+```go
+report := compiler.ValidateDepends(startNodeId, nodeMap)
+```
+
+Pass `compiler.WithoutDependsGuard()` to `NewVueFlowCompiler` to skip the
+automatic pass and validate on your own terms. Inactive transitions
+(`Next.Active == -1`) are still followed while judging reachability, so the guard
+only ever reports a deadlock it is certain about.
 
 ## Writing your own hook
 
