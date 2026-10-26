@@ -31,14 +31,19 @@ const (
 )
 
 const (
-	INFLOW_PLUGIN_PROTO_PREFIX = "inflow.cpu"
-	INFLOW_PLUGIN_V1_PREFIX = "inflow.v1"
+	INFLOW_PLUGIN_PROTO_PREFIX       = "inflow.cpu"
+	INFLOW_PLUGIN_V1_PREFIX          = "inflow.v1"
+	INFLOW_PLUGIN_SIG_CHANNEL_PREFIX = "inflow.plugin"
+
+	// INFLOW_PLUGIN_UPSTREAM_LEAF reserves one leaf under a plugin's signal
+	// channel for traffic going the other way: plugin -> upstream collector.
+	// The runtime's own signals (".proc" and whatever follows it) keep the rest
+	// of the channel, so a collector never has to tell the two apart by payload.
+	INFLOW_PLUGIN_UPSTREAM_LEAF = "up"
 )
 
-
-
 const (
-	CmdStop SvcReturnCommand= "stop"
+	CmdStop       SvcReturnCommand = "stop"
 	CmdNextFilter SvcReturnCommand = "next_tags"
 )
 const (

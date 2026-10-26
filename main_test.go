@@ -92,7 +92,10 @@ func TestSafePluginPermission(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	perm := InfraSpaces.PluginCredentialStrictPermission("remote-client-user", plugin.UniqId, plugin.InfraIsolated.Account)
+	perm, err := InfraSpaces.PluginCredentialStrictPermission("remote-client-user", plugin.UniqId, plugin.InfraIsolated.Account)
+	if err != nil {
+		panic(err)
+	}
 	cred, err := InfraSpaces.CreateUserCredential(plugin.InfraIsolated.Seed, perm)
 	if err != nil {
 		panic(err)
