@@ -24,6 +24,13 @@ type InflowWire struct {
 	flowGetSvcTopic    svcHandler.SvcTopic
 	contextGetSvcTopic svcHandler.SvcTopic
 	contextSetSvcTopic svcHandler.SvcTopic
+
+	// resourceLimit is the page size every engine-list read uses, so a reload
+	// triggered by an infra signal sees the same list as the one at startup.
+	resourceLimit int
+	// license is the gate infra served with the last engine list. See
+	// LicenseGate(); guarded by licenseMu in signals.go.
+	license *models.LicenseGate
 }
 
 func (iw *InflowWire) getCred() (models.Cred, error) {
@@ -113,7 +120,20 @@ func (iw *InflowWire) fetchResources(limit int) ([]models.RegisteredInflow, erro
 		return nil, err
 	}
 	iw.resources = list.Data.List
+	// Infra serves its license gate alongside the list. Remember it even when
+	// the list is empty: an empty list under a locked gate means "held back",
+	// and that is the difference between a licensing problem and a cluster with
+	// nothing registered.
+	iw.rememberLicenseGate(list.Data.License)
 	return list.Data.List, nil
+}
+
+// GetResourceLimit is the page size used for every engine-list read.
+func (iw *InflowWire) GetResourceLimit() int {
+	if iw.resourceLimit > 0 {
+		return iw.resourceLimit
+	}
+	return DefaultResourceLimit
 }
 
 // ReloadResourcesIfEmpty re-reads infra's engine list and installs the reachable

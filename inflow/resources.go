@@ -20,6 +20,10 @@ type InflowResource struct {
 	Url  string
 	Token string
 	Tags []string
+	// Weight is what infra served for this engine. Only active resources reach
+	// the pool, so it is always >= 0 here; it is carried so a weighted
+	// selection can use it without another round trip to infra.
+	Weight models.ResourceWeight
 }
 
 // PinResourceTag, when carried by a live resource, pins every process dispatch to
@@ -65,10 +69,21 @@ func SetResourceCandid(list []models.RegisteredInflow) (*roundrobin.RoundRobin[I
 // toInflowResources converts infra's registered-engine rows into pool entries,
 // signing each one's dispatch token with the secret of the portal it enrolled
 // through (empty secret ⇒ empty token ⇒ the infra bearer at dispatch time).
+//
+// Engines infra serves at a negative weight — parked by an operator, or held
+// back because the license gate is closed — are dropped here. This is the single
+// way rows become dispatch candidates (both the explicit reload and the startup
+// retry come through it), so filtering once at this point is what keeps an
+// out-of-service engine out of the pool. The rows themselves are still kept on
+// the wire (InflowWire.resources), because resolving the credential of a process
+// already running on a parked engine has to keep working.
 func toInflowResources(list []models.RegisteredInflow) []InflowResource {
 	all := make([]InflowResource, 0, len(list))
 	for _, el := range list {
-		all = append(all, InflowResource{Token: makeTokenWithHs256(el.RegisterPortal.JwtSecret), Name: el.Name, Url: el.Url, Tags: el.Tags})
+		if !el.Weight.Active() {
+			continue
+		}
+		all = append(all, InflowResource{Token: makeTokenWithHs256(el.RegisterPortal.JwtSecret), Name: el.Name, Url: el.Url, Tags: el.Tags, Weight: el.Weight})
 	}
 	return all
 }

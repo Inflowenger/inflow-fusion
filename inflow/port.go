@@ -49,8 +49,29 @@ func InitBackend(opts ...func(*InflowWire)) error {
 	// exposing the instance now is safe; the resource pool is simply still empty
 	// until the reload fills it.
 	inflowWireInstance = &inflow
-	inflow.ReloadResources(100)
+	inflow.ReloadResources(inflow.GetResourceLimit())
+	// The backend is wired and the pool is loaded: start listening for infra's
+	// resource signals so a new engine, or a license lockout, takes effect
+	// immediately instead of at the next restart. A failure here is not fatal —
+	// without the subscription the backend still works, it just converges on its
+	// own schedule rather than on infra's announcement.
+	if serr := inflow.SubscribeResourceSignals(); serr != nil {
+		inflow.GetLogger().Warn("infra resource signals unavailable; resource changes will not be picked up automatically", "error", serr.Error())
+	}
 	return err
+}
+
+// DefaultResourceLimit is the page size used when reading infra's engine list.
+const DefaultResourceLimit = 100
+
+// WithResourceLimit sets the page size for every engine-list read, including the
+// reloads triggered by infra's resource signals.
+func WithResourceLimit(limit int) func(*InflowWire) {
+	return func(iw *InflowWire) {
+		if limit > 0 {
+			iw.resourceLimit = limit
+		}
+	}
 }
 
 func WithInfraApi(infraurl string) func(*InflowWire) {
